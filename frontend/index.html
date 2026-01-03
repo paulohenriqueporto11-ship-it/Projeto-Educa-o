@@ -3,24 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Redação - Início</title>
+    <title>Redação Pro - Início</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%; }
-        h1 { color: #333; margin-bottom: 10px; }
-        p { color: #666; margin-bottom: 30px; line-height: 1.5; }
-        .btn { display: inline-block; background-color: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; transition: background 0.3s; width: 100%; box-sizing: border-box; }
-        .btn:hover { background-color: #0056b3; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        h1 { color: #2c3e50; }
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.2s; font-weight: bold; text-decoration: none; box-sizing: border-box; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-random { background: #28a745; color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
     </style>
 </head>
 <body>
-
     <div class="card">
-        <h1>🎓 Redação Concurso</h1>
-        <p>Bem-vindo ao sistema de correção automática. Pratique sua escrita e receba feedback instantâneo da IA.</p>
-        
-        <a href="redacao.html" class="btn">Começar Redação</a>
+        <h1>🎓 Redação IA 2.0</h1>
+        <p>Escolha como você quer treinar hoje:</p>
+
+        <button onclick="escolherTema('Livre')" class="btn btn-secondary">✍️ Tema Livre</button>
+        <button onclick="gerarAleatorio()" class="btn btn-random">🎲 Tema Aleatório</button>
+        <button onclick="temaPersonalizado()" class="btn btn-primary">🎯 Tema Personalizado</button>
     </div>
 
+    <script>
+        function irParaRedacao(tema) {
+            // Salva o tema no navegador para a próxima página ler
+            localStorage.setItem('temaRedacao', tema);
+            window.location.href = 'redacao.html';
+        }
+
+        function escolherTema(tema) {
+            irParaRedacao(tema);
+        }
+
+        function temaPersonalizado() {
+            const tema = prompt("Digite o tema da redação:");
+            if(tema && tema.length > 5) irParaRedacao(tema);
+        }
+
+        function gerarAleatorio() {
+            const temas = [
+                "Os desafios da educação a distância no Brasil",
+                "A persistência do racismo na sociedade brasileira",
+                "Caminhos para combater a intolerância religiosa",
+                "O estigma associado às doenças mentais",
+                "A manipulação do comportamento do usuário pelo controle de dados",
+                "Democratização do acesso ao cinema no Brasil",
+                "Desafios para a valorização de comunidades e povos tradicionais"
+            ];
+            const aleatorio = temas[Math.floor(Math.random() * temas.length)];
+            irParaRedacao(aleatorio);
+        }
+    </script>
 </body>
 </html>
