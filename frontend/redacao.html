@@ -1,1 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escrever Redação</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 800px; height: fit-content; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 24px; color: #333; }
+        .voltar { text-decoration: none; color: #666; font-size: 14px; }
+        .voltar:hover { text-decoration: underline; }
 
+        textarea { width: 100%; height: 350px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; font-family: inherit; resize: vertical; margin-bottom: 20px; box-sizing: border-box; transition: border 0.3s; }
+        textarea:focus { border-color: #007bff; outline: none; }
+        
+        button { background-color: #28a745; color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+        button:hover { background-color: #218838; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        /* Área de Resultado */
+        #resultado { margin-top: 25px; padding: 20px; border-radius: 8px; display: none; animation: fadeIn 0.5s; }
+        .nota-badge { display: inline-block; background: #fff; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 20px; color: #28a745; margin-bottom: 15px; border: 1px solid #28a745; }
+        .feedback-text { color: #444; line-height: 1.6; white-space: pre-wrap; }
+        
+        .loading { text-align: center; display: none; color: #666; margin-top: 15px; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>📝 Escrever Redação</h1>
+        <a href="index.html" class="voltar">← Voltar ao Início</a>
+    </header>
+    
+    <textarea id="textoRedacao" placeholder="Digite sua redação aqui... (Mínimo 50 palavras)"></textarea>
+    
+    <button onclick="enviarRedacao()" id="btnEnviar">Enviar para Correção</button>
+    
+    <div id="loading" class="loading">🤖 A IA está corrigindo seu texto...</div>
+
+    <div id="resultado">
+        <div class="nota-badge">Nota: <span id="notaValor">0</span>/1000</div>
+        <h3>Feedback da IA:</h3>
+        <div class="feedback-text" id="feedbackTexto"></div>
+    </div>
+</div>
+
+<script>
+    // URL CONFIGURADA PARA O SEU BACKEND NO RENDER
+    const API_URL = "https://backend-redacao.onrender.com/api/enviar-redacao";
+
+    async function enviarRedacao() {
+        const texto = document.getElementById('textoRedacao').value;
+        const btn = document.getElementById('btnEnviar');
+        const loading = document.getElementById('loading');
+        const resultadoDiv = document.getElementById('resultado');
+
+        // Validação simples no front
+        if (!texto || texto.trim().length < 10) {
+            alert("Por favor, escreva um texto antes de enviar!");
+            return;
+        }
+
+        // Atualiza UI
+        btn.disabled = true;
+        btn.innerText = "Enviando...";
+        loading.style.display = 'block';
+        resultadoDiv.style.display = 'none';
+
+        try {
+            // Chama o Backend
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ texto: texto })
+            });
+
+            const data = await response.json();
+
+            if (data.sucesso || data.nota !== undefined) {
+                // Sucesso
+                document.getElementById('notaValor').innerText = data.nota;
+                document.getElementById('feedbackTexto').innerText = data.feedback;
+                
+                resultadoDiv.style.display = 'block';
+                resultadoDiv.style.backgroundColor = '#d4edda';
+                resultadoDiv.style.border = '1px solid #c3e6cb';
+            } else {
+                // Erro retornado pela API
+                alert("Erro: " + (data.erro || "Algo deu errado na correção."));
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Erro de conexão. Verifique se o Backend no Render está ativo.");
+        } finally {
+            // Restaura UI
+            btn.disabled = false;
+            btn.innerText = "Enviar para Correção";
+            loading.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
