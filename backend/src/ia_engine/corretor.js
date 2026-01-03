@@ -1,238 +1,195 @@
 // src/ia_engine/corretor.js
 
-function corrigirRedacao(texto) {
-    let nota = 0;
-    let feedback = [];
-    
-    // --- 0. PREPARAÇÃO E LIMPEZA ---
+function corrigirRedacao(texto, tema) {
+    // Objeto de Resposta Profissional
+    let resultado = {
+        notaFinal: 0,
+        competencias: {
+            c1: { nome: "Norma Culta", nota: 200, erros: [] },
+            c2: { nome: "Tema e Estrutura", nota: 200, erros: [] },
+            c3: { nome: "Argumentação", nota: 200, erros: [] },
+            c4: { nome: "Coesão", nota: 200, erros: [] },
+            c5: { nome: "Proposta de Intervenção", nota: 200, erros: [] }
+        },
+        analiseGeral: []
+    };
+
     const textoLimpo = texto.trim();
-    if (!textoLimpo) return { nota: 0, detalhes: "Texto vazio." };
-
-    // Divide em parágrafos e frases
-    const paragrafos = textoLimpo.split(/\n+/).filter(p => p.trim().length > 0);
-    const textoInteiroLower = textoLimpo.toLowerCase();
+    const textoLower = textoLimpo.toLowerCase();
     
-    // Tokenização simples (palavras)
-    const palavras = textoInteiroLower.match(/\b[\wÀ-ÿ]+\b/g) || [];
+    // Tokenização básica
+    const palavras = textoLower.match(/\b[\wÀ-ÿ]+\b/g) || [];
     const totalPalavras = palavras.length;
+    const paragrafos = textoLimpo.split(/\n+/).filter(p => p.trim().length > 0);
 
-    // --- 1. FILTRO ANTI-SPAM E SEGURANÇA (MANTIDO E REFORÇADO) ---
-    const palavrasUnicas = new Set(palavras);
-    const taxaVariedade = palavrasUnicas.size / totalPalavras;
+    // --- 0. TRAVAS DE SEGURANÇA (Spam/Tamanho) ---
+    if (totalPalavras < 40) {
+        return zeraTudo(resultado, "Texto insuficiente para correção (mínimo 40 palavras).");
+    }
     
-    // Filtro de sujeira (pontuação excessiva)
-    const totalCaracteres = textoLimpo.length;
-    const apenasLetras = textoLimpo.replace(/[^a-zA-ZÀ-ÿ]/g, "").length;
-    const espacos = (textoLimpo.match(/\s/g) || []).length;
-    const sujeira = totalCaracteres - apenasLetras - espacos;
-
-    if (totalCaracteres > 0 && (sujeira / totalCaracteres) > 0.12) {
-        return { nota: 0, detalhes: "🚨 NOTA ZERO: Excesso de pontuação ou símbolos aleatórios. Escreva um texto real." };
-    }
-    if (taxaVariedade < 0.35 && totalPalavras > 20) {
-        return { nota: 0, detalhes: "🚨 NOTA ZERO: Vocabulário repetitivo (Spam detectado)." };
-    }
-    if (/([,;:'"\/\\|@#$%&*])\1/.test(textoLimpo)) {
-        return { nota: 0, detalhes: "🚨 NOTA ZERO: Repetição de sinais de pontuação (ex: ,, ou ..)." };
+    // Verificador de repetição insana (spam)
+    const uniqueWords = new Set(palavras);
+    if ((uniqueWords.size / totalPalavras) < 0.35) {
+        return zeraTudo(resultado, "🚨 Texto anulado: Repetição excessiva de palavras (Spam).");
     }
 
-    // =================================================================
-    // AVALIAÇÃO PROFISSIONAL POR COMPETÊNCIAS (ENEM)
-    // =================================================================
-
-    // --- COMPETÊNCIA 1: NORMA CULTA (200 PONTOS) ---
-    // Foco: Erros comuns, frases longas, oralidade.
-    let notaC1 = 200;
-    const errosC1 = [];
+    // --- COMPETÊNCIA 1: NORMA CULTA ---
+    // Penaliza oralidade, erros comuns e frases longas demais
+    const c1 = resultado.competencias.c1;
     
-    // 1.1 Vícios de linguagem e oralidade
-    const oralidade = ['vc', 'pq', 'tb', 'tbm', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'coisa', 'negócio', 'tipo assim', 'aí', 'então assim'];
-    oralidade.forEach(termo => {
-        if (new RegExp(`\\b${termo}\\b`, 'i').test(textoLimpo)) {
-            notaC1 -= 20;
-            errosC1.push(`Evite oralidade/abreviação: "${termo}".`);
-        }
+    const oralidade = ['vc', 'pq', 'tb', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'coisa', 'negócio', 'tipo assim', 'aí'];
+    oralidade.forEach(w => {
+        if (palavras.includes(w)) { c1.nota -= 20; c1.erros.push(`Oralidade: "${w}"`); }
     });
 
-    // 1.2 Erros Gramaticais Clássicos (Regex)
-    if (/\bhouveram\b/i.test(textoLimpo)) {
-        notaC1 -= 20; errosC1.push("Erro grave: 'Houveram' não existe no sentido de existir. Use 'Houve'.");
-    }
-    if (/\bfazem\s+\d+\s+anos\b/i.test(textoLimpo)) {
-        notaC1 -= 20; errosC1.push("Erro de tempo: 'Fazem x anos' está errado. Use 'Faz x anos'.");
-    }
-    if (/\bmenas\b/i.test(textoLimpo)) {
-        notaC1 -= 40; errosC1.push("Erro grave: 'Menas' não existe.");
-    }
-    if (/\bseje\b/i.test(textoLimpo) || /\besteje\b/i.test(textoLimpo)) {
-        notaC1 -= 40; errosC1.push("Erro grave: 'Seje/Esteje' não existe. Use 'Seja/Esteja'.");
-    }
+    if (/\bhouveram\b/i.test(textoLower)) { c1.nota -= 40; c1.erros.push("Erro grave: 'Houveram'."); }
+    if (/\bfazem\s+\d+\s+anos\b/i.test(textoLower)) { c1.nota -= 40; c1.erros.push("Erro grave: 'Fazem x anos'."); }
 
-    // 1.3 Frases muito longas (Prolixidade)
-    // Quebra por ponto final e conta palavras
+    // Frases muito longas (Prolixidade)
     const frases = textoLimpo.split(/[.!?]+/).filter(f => f.trim().length > 0);
-    let frasesLongas = 0;
     frases.forEach(f => {
-        const qtdPalavrasFrase = (f.match(/\b[\wÀ-ÿ]+\b/g) || []).length;
-        if (qtdPalavrasFrase > 45) { // 45 palavras sem ponto é muito
-            frasesLongas++;
+        if (f.split(' ').length > 50) {
+            c1.nota -= 20;
+            c1.erros.push("Frase excessivamente longa (+50 palavras). Use mais pontos finais.");
         }
     });
-    if (frasesLongas > 0) {
-        notaC1 -= (20 * frasesLongas);
-        errosC1.push(`Atenção: Você tem ${frasesLongas} frase(s) muito longa(s) (+45 palavras). Use mais pontos finais.`);
+    c1.nota = Math.max(0, c1.nota);
+
+
+    // --- COMPETÊNCIA 2: TEMA E ESTRUTURA ---
+    // Aderência ao tema + Estrutura dissertativa
+    const c2 = resultado.competencias.c2;
+
+    // 2.1 Aderência ao Tema (CRÍTICO)
+    if (tema && tema !== "Livre") {
+        // Extrai palavras-chave do tema (ex: "Caminhos para combater o racismo" -> racismo, combater)
+        const palavrasTema = tema.toLowerCase().match(/\b[\wÀ-ÿ]{4,}\b/g) || [];
+        const citacoesTema = palavrasTema.filter(pt => textoLower.includes(pt)).length;
+
+        if (citacoesTema === 0) {
+            c2.nota = 40; // Fuga do tema quase total
+            c2.erros.push(`🚨 Tangenciamento: Você não citou as palavras-chave do tema: "${tema}".`);
+        } else if (citacoesTema < palavrasTema.length) {
+            c2.nota -= 40;
+            c2.erros.push("Atenção: Você citou apenas parte do tema. Certifique-se de abordar o tema completo.");
+        }
     }
 
-    // 1.4 Letra minúscula no início
-    let frasesMinusculas = 0;
-    frases.forEach(f => {
-        const primeira = f.trim().charAt(0);
-        if (primeira.match(/[a-zà-ÿ]/) && primeira === primeira.toLowerCase()) frasesMinusculas++;
-    });
-    if (frasesMinusculas > 0) {
-        notaC1 -= 20; errosC1.push("Use letra maiúscula no início das frases.");
-    }
-
-    if (notaC1 < 0) notaC1 = 0;
-    nota += notaC1;
-    feedback.push(errosC1.length > 0 ? `⚠️ C1 (Norma Culta): ${errosC1.join(" ")}` : "✅ C1: Ótimo domínio da norma culta.");
-
-
-    // --- COMPETÊNCIA 2: ESTRUTURA E TEMA (200 PONTOS) ---
-    // Foco: Tese explícita, estrutura 4 parágrafos, não tangenciar.
-    let notaC2 = 200;
-    const errosC2 = [];
-
-    // 2.1 Estrutura de Parágrafos
+    // 2.2 Estrutura
     if (paragrafos.length < 3) {
-        notaC2 = 40; errosC2.push("Texto embrionário. Faça no mínimo 3 parágrafos (ideal 4).");
-    } else if (paragrafos.length === 3) {
-        notaC2 = 140; errosC2.push("Estrutura aceitável, mas o ideal para nota máxima são 4 parágrafos (2 de desenvolvimento).");
+        c2.nota = 40; c2.erros.push("Estrutura embrionária (menos de 3 parágrafos).");
     } else if (paragrafos.length > 5) {
-        notaC2 = 160; errosC2.push("Muitos parágrafos curtos. Tente condensar as ideias.");
+        c2.nota -= 40; c2.erros.push("Muitos parágrafos curtos. Tente condensar.");
     }
-
-    // 2.2 Tese Explícita na Introdução (Juízo de Valor)
+    
+    // Tese na introdução (procura juízo de valor)
     if (paragrafos.length > 0) {
         const intro = paragrafos[0].toLowerCase();
-        // Palavras que indicam opinião/problematização
-        const marcasDeTese = ['fundamental', 'prejudicial', 'grave', 'problema', 'desafio', 'necessário', 'impasse', 'infelizmente', 'entretanto', 'papel', 'importância'];
-        const temTese = marcasDeTese.some(m => intro.includes(m));
-        
-        if (!temTese) {
-            notaC2 -= 40;
-            errosC2.push("Sua introdução parece muito descritiva. Use palavras de juízo de valor para deixar sua tese (opinião) clara.");
+        const marcasTese = ['fundamental', 'prejudicial', 'grave', 'problema', 'desafio', 'necessário', 'impasse'];
+        if (!marcasTese.some(m => intro.includes(m))) {
+            c2.nota -= 40; c2.erros.push("Introdução muito descritiva. Deixe sua opinião (tese) clara.");
         }
     }
-
-    if (notaC2 < 40) notaC2 = 40;
-    nota += notaC2;
-    feedback.push(errosC2.length > 0 ? `⚠️ C2 (Tema/Estrutura): ${errosC2.join(" ")}` : "✅ C2: Estrutura dissertativa-argumentativa completa.");
+    c2.nota = Math.max(40, c2.nota);
 
 
-    // --- COMPETÊNCIA 3: ARGUMENTAÇÃO (200 PONTOS) ---
-    // Foco: Repertório legitimado e autoria.
-    let notaC3 = 80; // Começa baixo, ganha ponto por provar
-    const repertorios = [];
+    // --- COMPETÊNCIA 3: ARGUMENTAÇÃO E PROFUNDIDADE ---
+    const c3 = resultado.competencias.c3;
+    
+    // 3.1 Profundidade (Causa e Consequência)
+    const explicativos = ['porque', 'pois', 'visto que', 'uma vez que', 'dado que'];
+    const conclusivos = ['consequentemente', 'resulta em', 'gera', 'ocasiona', 'acarretando'];
+    
+    const temExplicacao = explicativos.some(e => textoLower.includes(e));
+    const temConsequencia = conclusivos.some(c => textoLower.includes(c));
 
-    // 3.1 Busca por Autoridade/Dados
-    if (/(segundo|de acordo|conforme|consoante)\s+[A-Z]/.test(textoLimpo)) {
-        notaC3 += 60; repertorios.push("Citação direta");
+    if (!temExplicacao) { c3.nota -= 40; c3.erros.push("Argumentação superficial: Use 'porque', 'pois' para explicar as causas."); }
+    if (!temConsequencia) { c3.nota -= 40; c3.erros.push("Falta profundidade: Mostre as consequências (ex: 'isso gera...', 'resulta em...')."); }
+
+    // 3.2 Repertório
+    const repertorios = ['segundo', 'de acordo', 'ibge', 'oms', 'constituição', 'dados', 'lei', 'filósofo', 'sociólogo'];
+    if (!repertorios.some(r => textoLower.includes(r))) {
+        c3.nota -= 60; c3.erros.push("Faltou repertório sociocultural (Dados, Leis, Autores).");
     }
-    if (/\d+%/.test(textoLimpo) || /\bdados\b/.test(textoLimpo) || /\bibge\b/i.test(textoLimpo)) {
-        notaC3 += 40; repertorios.push("Dados estatísticos");
+    
+    // 3.3 Anti-Cliché
+    const cliches = ['hoje em dia', 'nos dias de hoje', 'desde os primórdios', 'a cada dia que passa'];
+    if (cliches.some(c => textoLower.includes(c))) {
+        c3.nota -= 20; c3.erros.push("Evite clichês como 'Hoje em dia'. Seja mais específico.");
     }
-    if (/\blei\b/i.test(textoLimpo) || /\bartigo\b/i.test(textoLimpo) || /\bconstituição\b/i.test(textoLimpo)) {
-        notaC3 += 40; repertorios.push("Legislação");
-    }
-    if (/\bfilósofo\b/i.test(textoLimpo) || /\bsociólogo\b/i.test(textoLimpo) || /\bpensador\b/i.test(textoLimpo) || /\bobra\b/i.test(textoLimpo)) {
-        notaC3 += 40; repertorios.push("Repertório cultural");
-    }
-
-    if (notaC3 > 200) notaC3 = 200;
-    nota += notaC3;
-    feedback.push(repertorios.length > 0 ? `🌟 C3 (Argumentação): Bom uso de repertório (${repertorios.join(", ")}).` : "⚠️ C3: Argumentação fraca. Cite dados, leis, pensadores ou fatos históricos para validar sua opinião.");
+    c3.nota = Math.max(40, c3.nota);
 
 
-    // --- COMPETÊNCIA 4: COESÃO (200 PONTOS) ---
-    // Foco: Conectivos inter e intra parágrafos.
-    let notaC4 = 200;
-    const errosC4 = [];
-    const conectivos = ['portanto', 'entretanto', 'contudo', 'todavia', 'além disso', 'por outro lado', 'visto que', 'dessa forma', 'em suma', 'consequentemente', 'porém', 'pois', 'mas', 'embora', 'logo', 'assim', 'nesse sentido', 'diante disso', 'sob essa ótica'];
-
-    // 4.1 Variedade
-    const usados = new Set(conectivos.filter(c => textoInteiroLower.includes(c)));
+    // --- COMPETÊNCIA 4: COESÃO ---
+    const c4 = resultado.competencias.c4;
+    const conectivos = ['portanto', 'entretanto', 'contudo', 'todavia', 'além disso', 'por outro lado', 'visto que', 'dessa forma', 'em suma'];
+    
+    // Variedade
+    const usados = new Set(conectivos.filter(c => textoLower.includes(c)));
     if (usados.size < 4) {
-        notaC4 -= 80;
-        errosC4.push(`Variedade baixa de conectivos (apenas ${usados.size} tipos encontrados). Use: Entretanto, Além disso, Portanto...`);
+        c4.nota -= 80; c4.erros.push("Pouca variedade de conectivos. Use pelo menos 4 diferentes.");
     }
 
-    // 4.2 Coesão INTER-parágrafos (Obrigatório no ENEM)
-    // Verifica se os parágrafos de desenvolvimento/conclusão COMEÇAM com conectivo
-    if (paragrafos.length >= 3) {
-        let conexoesInter = 0;
-        // Pula o primeiro (intro), checa os outros
-        for (let i = 1; i < paragrafos.length; i++) {
-            const inicio = paragrafos[i].trim().toLowerCase().split(' ').slice(0, 3).join(' '); // Pega as 3 primeiras palavras
-            const temConectivoInicio = conectivos.some(c => inicio.includes(c));
-            if (temConectivoInicio) conexoesInter++;
+    // Coesão Interparágrafos (Parágrafo 2, 3 e 4 devem começar com conectivo)
+    if (paragrafos.length >= 2) {
+        let errosConexao = 0;
+        for(let i=1; i < paragrafos.length; i++) {
+            const inicio = paragrafos[i].substring(0, 20).toLowerCase();
+            if (!conectivos.some(c => inicio.includes(c))) errosConexao++;
         }
-
-        if (conexoesInter === 0 && paragrafos.length > 1) {
-            notaC4 -= 60;
-            errosC4.push("Falta coesão entre parágrafos. Inicie os parágrafos de desenvolvimento e conclusão com conectivos (ex: 'Em primeiro lugar', 'Além disso', 'Portanto').");
+        if (errosConexao > 0) {
+            c4.nota -= 40; c4.erros.push("Inicie os parágrafos de desenvolvimento/conclusão com conectivos.");
         }
     }
-
-    if (notaC4 < 40) notaC4 = 40;
-    nota += notaC4;
-    feedback.push(errosC4.length > 0 ? `⚠️ C4 (Coesão): ${errosC4.join(" ")}` : "✅ C4: Texto fluido e bem conectado.");
+    c4.nota = Math.max(40, c4.nota);
 
 
-    // --- COMPETÊNCIA 5: PROPOSTA DE INTERVENÇÃO (200 PONTOS) ---
-    // Foco: Agente, Ação, Meio, Efeito.
-    let notaC5 = 0;
-    const detalhesC5 = [];
-
+    // --- COMPETÊNCIA 5: PROPOSTA DE INTERVENÇÃO ---
+    const c5 = resultado.competencias.c5;
+    
     if (paragrafos.length > 1) {
-        const conclusao = paragrafos[paragrafos.length - 1].toLowerCase();
+        const fim = paragrafos[paragrafos.length - 1].toLowerCase();
         
-        // 5.1 Busca Elementos Específicos
-        const temAgente = /governo|estado|ministério|escola|mídia|sociedade|família|ongs|poder público|indivíduo/.test(conclusao);
-        const temAcao = /deve|precisa|necessita|cabe a|é necessário|promover|criar|fiscalizar|investir/.test(conclusao);
-        const temMeio = /por meio de|através de|mediante|com o uso de|intermédio|via/.test(conclusao);
-        const temFinalidade = /a fim de|com o intuito de|para que|visando|objetivando|com o fito de/.test(conclusao);
+        // Elementos Obrigatórios
+        const temAgente = /governo|estado|ministério|escola|mídia|sociedade|família|ongs/.test(fim);
+        const temAcao = /deve|precisa|necessita|cabe a|promover|criar|fiscalizar|investir/.test(fim);
+        const temMeio = /por meio de|através de|mediante|intermédio/.test(fim);
+        const temFinalidade = /a fim de|com o intuito de|para que|visando|com o fito de/.test(fim);
 
-        let elementos = 0;
-        if (temAgente) { elementos++; detalhesC5.push("Agente"); }
-        if (temAcao) { elementos++; detalhesC5.push("Ação"); }
-        if (temMeio) { elementos++; detalhesC5.push("Meio/Modo"); }
-        if (temFinalidade) { elementos++; detalhesC5.push("Finalidade"); }
+        if (!temAgente) c5.erros.push("Faltou AGENTE (quem faz).");
+        if (!temAcao) c5.erros.push("Faltou AÇÃO (o que fazer).");
+        if (!temMeio) c5.erros.push("Faltou MEIO (por meio de que).");
+        if (!temFinalidade) c5.erros.push("Faltou FINALIDADE (para que).");
 
-        // Cálculo da nota C5 (40 pontos por elemento + 40 base/detalhamento)
-        notaC5 = elementos * 40;
-        if (elementos === 4) notaC5 = 200; // Bônus por completude
-
-        if (notaC5 < 40) notaC5 = 40; // Mínimo se tiver texto
-        if (notaC5 === 200) {
-            feedback.push("🌟 C5 (Proposta): Perfeita! Contém Agente, Ação, Meio e Finalidade.");
+        let notaCalc = 0;
+        if (temAgente) notaCalc += 40;
+        if (temAcao) notaCalc += 40;
+        if (temMeio) notaCalc += 40;
+        if (temFinalidade) notaCalc += 40;
+        
+        // Detalhamento/Qualidade (Penaliza propostas vagas)
+        if (fim.includes("conscientizar") || fim.includes("palestra")) {
+            c5.erros.push("⚠️ Proposta fraca: 'Conscientizar' ou 'Palestras' são considerados senso comum. Proponha algo concreto.");
         } else {
-            feedback.push(`⚠️ C5 (Proposta): Incompleta (${notaC5}/200). Encontrei: [${detalhesC5.join(", ")}]. Tente usar: "O GOVERNO deve CRIAR leias, POR MEIO DE decretos, A FIM DE melhorar..."`);
+            notaCalc += 40; // Bônus por não usar clichê de intervenção
         }
 
+        c5.nota = notaCalc;
     } else {
-        feedback.push("❌ C5: Texto sem conclusão clara.");
+        c5.nota = 0; c5.erros.push("Sem parágrafo de conclusão.");
     }
-    nota += notaC5;
 
-    // --- TRAVA FINAL ---
-    if (nota > 1000) nota = 1000;
-    if (totalPalavras < 40) nota = 0; 
 
-    return {
-        nota: nota,
-        detalhes: feedback.join("\n\n")
-    };
+    // --- CÁLCULO FINAL ---
+    resultado.notaFinal = c1.nota + c2.nota + c3.nota + c4.nota + c5.nota;
+    return resultado;
+}
+
+function zeraTudo(res, motivo) {
+    res.notaFinal = 0;
+    res.analiseGeral.push(motivo);
+    Object.keys(res.competencias).forEach(k => res.competencias[k].nota = 0);
+    return res;
 }
 
 module.exports = { corrigirRedacao };
