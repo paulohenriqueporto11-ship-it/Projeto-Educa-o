@@ -1,49 +1,36 @@
-// src/controllers/redacaoController.js
 const { createClient } = require('@supabase/supabase-js');
 const { corrigirRedacao } = require('../ia_engine/corretor');
 require('dotenv').config();
 
-// Configuração do Supabase (Variáveis de Ambiente no Render)
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 async function enviarRedacao(req, res) {
-    const { texto } = req.body;
+    // Agora recebe também o TEMA
+    const { texto, tema } = req.body;
 
-    if (!texto) {
-        return res.status(400).json({ erro: 'Texto é obrigatório' });
-    }
+    if (!texto) return res.status(400).json({ erro: 'Texto obrigatório' });
 
     try {
-        // 1. Passa pela "IA"
-        const resultadoIA = corrigirRedacao(texto);
+        // Passa o tema para a IA validar aderência
+        const resultadoIA = corrigirRedacao(texto, tema || "Livre");
 
-        // 2. Salva no Banco de Dados
+        // Salva no Supabase com estrutura profissional
         const { data, error } = await supabase
             .from('redacoes')
-            .insert([
-                { 
-                    texto_redacao: texto, 
-                    nota: resultadoIA.nota, 
-                    feedback: resultadoIA.detalhes 
-                }
-            ])
-            .select();
+            .insert([{ 
+                texto_redacao: texto, 
+                tema: tema,
+                nota_geral: resultadoIA.notaFinal, 
+                detalhes_json: resultadoIA // Salva o JSON completo das competências
+            }]);
 
         if (error) throw error;
 
-        // 3. Devolve a resposta para o site
-        res.json({
-            sucesso: true,
-            nota: resultadoIA.nota,
-            feedback: resultadoIA.detalhes,
-            id_banco: data[0].id
-        });
+        res.json({ sucesso: true, resultado: resultadoIA });
 
     } catch (err) {
-        console.error("Erro:", err);
-        res.status(500).json({ erro: 'Erro ao processar redação' });
+        console.error(err);
+        res.status(500).json({ erro: 'Erro interno no servidor' });
     }
 }
 
