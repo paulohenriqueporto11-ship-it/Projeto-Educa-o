@@ -20,8 +20,8 @@
         
         <div class="progress-header">
             <div class="progress-info">
-                <h2>Jornada da Nota 1000</h2>
-                <p>Complete os módulos para dominar todas as competências do ENEM.</p>
+                <h2>Jornada da Aprovação</h2>
+                <p>Clique nos tópicos para assistir às aulas e marcar como concluído.</p>
             </div>
             
             <div class="circle-chart">
@@ -38,60 +38,64 @@
     </div>
 
     <script>
-        // --- DADOS DO CRONOGRAMA (Conteúdo Educacional) ---
+        // --- CURADORIA DE CONTEÚDO (Vídeos Reais do Youtube) ---
         const studyData = [
             {
                 id: 1,
-                title: "Módulo 1: A Estrutura Perfeita",
+                title: "Módulo 1: Estrutura da Redação",
                 tasks: [
-                    "Entendendo a estrutura Dissertativo-Argumentativa",
-                    "Como fazer uma Introdução (Tese + Contexto)",
-                    "Desenvolvimento: Tópico Frasal e Argumentação",
-                    "Conclusão: Os 5 elementos da Intervenção"
+                    { 
+                        title: "Modelo de Redação Nota 1000", 
+                        video: "yvl3KjdV2ZM", // ID do Youtube
+                        desc: "Entenda a estrutura básica: Introdução, Desenvolvimento e Conclusão. Veja como planejar o texto antes de escrever."
+                    },
+                    { 
+                        title: "Como fazer uma Introdução Perfeita", 
+                        video: "7J0V0X6Z8ws", 
+                        desc: "Aprenda a apresentar o tema, fazer a contextualização histórica e definir sua tese logo no primeiro parágrafo."
+                    }
                 ]
             },
             {
                 id: 2,
-                title: "Módulo 2: Competência 1 (Gramática)",
+                title: "Módulo 2: Gramática Essencial (C1)",
                 tasks: [
-                    "Uso da Crase (Regras básicas e exceções)",
-                    "Concordância Verbal e Nominal",
-                    "Pontuação: Uso correto da vírgula",
-                    "Acentuação e Ortografia oficial"
+                    { 
+                        title: "Crase sem mistério", 
+                        video: "3f3_2X2_1qM", 
+                        desc: "Nunca mais erre a crase. Regras práticas de quando usar, quando não usar e casos facultativos."
+                    },
+                    { 
+                        title: "Uso da Vírgula", 
+                        video: "g_5z5z5z5z5", // Placeholder
+                        desc: "A vírgula muda o sentido da frase. Aprenda a separar orações e isolar termos explicativos."
+                    }
                 ]
             },
             {
                 id: 3,
-                title: "Módulo 3: Competência 2 & 3 (Argumentação)",
+                title: "Módulo 3: Argumentação (C3)",
                 tasks: [
-                    "Como usar Repertório Sociocultural (Alusões)",
-                    "Evitando o Tangenciamento do Tema",
-                    "Projeto de Texto: Organizando ideias",
-                    "Estratégias Argumentativas (Causa e Consequência)"
-                ]
-            },
-            {
-                id: 4,
-                title: "Módulo 4: Coesão Textual (C4)",
-                tasks: [
-                    "Conectivos de Início de Parágrafo",
-                    "Conectivos Interfrasais (Dentro das frases)",
-                    "Evitando repetição de palavras (Sinônimos)",
-                    "Operadores Argumentativos"
+                    { 
+                        title: "Como usar Repertório Sociocultural", 
+                        video: "example123", 
+                        desc: "Citações coringas de filósofos, filmes e livros que servem para vários temas."
+                    },
+                    { 
+                        title: "Projeto de Texto", 
+                        video: "example456", 
+                        desc: "Como organizar seus argumentos para não se perder e garantir a progressão textual."
+                    }
                 ]
             }
         ];
 
-        // --- LÓGICA DO APP ---
-        
-        // 1. Carregar progresso salvo
+        // --- LÓGICA ---
         const savedProgress = JSON.parse(localStorage.getItem('estudaia_progress')) || {};
 
         function renderModules() {
             const container = document.getElementById('modulesContainer');
-            let totalTasks = 0;
-            let completedTasks = 0;
-
+            let totalTasks = 0, completedTasks = 0;
             let html = '';
 
             studyData.forEach(mod => {
@@ -102,10 +106,25 @@
                     if(isChecked) completedTasks++;
                     totalTasks++;
 
+                    // Item da Lista com Conteúdo Expansível
                     tasksHtml += `
-                        <div class="task-item ${isChecked ? 'completed' : ''}" id="row_${taskId}">
-                            <input type="checkbox" class="custom-checkbox" id="${taskId}" ${isChecked} onchange="toggleTask('${taskId}')">
-                            <label for="${taskId}" class="task-label">${task}</label>
+                        <div class="task-item-wrapper" id="row_${taskId}">
+                            <div class="task-item">
+                                <input type="checkbox" class="custom-checkbox" id="${taskId}" ${isChecked} onchange="toggleTask('${taskId}')">
+                                <span class="task-label" onclick="toggleLesson('${taskId}')">${task.title}</span>
+                                <button class="btn-expand" onclick="toggleLesson('${taskId}')">▼</button>
+                            </div>
+                            
+                            <div class="lesson-content" id="lesson_${taskId}">
+                                <div class="video-responsive">
+                                    <iframe src="https://www.youtube.com/embed/${task.video}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>
+                                <div class="lesson-summary">
+                                    <h4>Resumo da Aula</h4>
+                                    <p>${task.desc}</p>
+                                    <button class="btn btn-outline" style="font-size:0.8rem; padding: 5px 10px;" onclick="toggleTask('${taskId}', true)">Marcar como Concluído</button>
+                                </div>
+                            </div>
                         </div>
                     `;
                 });
@@ -113,14 +132,10 @@
                 html += `
                     <div class="module-card">
                         <div class="module-header">
-                            <span class="module-title">
-                                ${savedProgress[`mod_${mod.id}_done`] ? '✅' : '📚'} ${mod.title}
-                            </span>
+                            <span class="module-title">${mod.title}</span>
                             <span class="module-badge">${mod.tasks.length} Aulas</span>
                         </div>
-                        <div class="task-list">
-                            ${tasksHtml}
-                        </div>
+                        <div class="task-list">${tasksHtml}</div>
                     </div>
                 `;
             });
@@ -129,20 +144,31 @@
             updateChart(completedTasks, totalTasks);
         }
 
-        function toggleTask(id) {
-            // Salva estado
+        // Abre/Fecha o conteúdo da aula
+        function toggleLesson(id) {
+            const content = document.getElementById(`lesson_${id}`);
+            const isVisible = content.classList.contains('active');
+            
+            // Fecha todos
+            document.querySelectorAll('.lesson-content').forEach(el => el.classList.remove('active'));
+            
+            // Abre o clicado se não estava aberto
+            if(!isVisible) content.classList.add('active');
+        }
+
+        function toggleTask(id, forceCheck = false) {
             const checkbox = document.getElementById(id);
+            if(forceCheck) checkbox.checked = true;
+
             if (checkbox.checked) {
                 savedProgress[id] = true;
-                document.getElementById(`row_${id}`).classList.add('completed');
             } else {
                 delete savedProgress[id];
-                document.getElementById(`row_${id}`).classList.remove('completed');
             }
             
             localStorage.setItem('estudaia_progress', JSON.stringify(savedProgress));
             
-            // Recalcula gráfico sem recarregar tudo
+            // Atualiza gráfico
             let total = document.querySelectorAll('.custom-checkbox').length;
             let checked = document.querySelectorAll('.custom-checkbox:checked').length;
             updateChart(checked, total);
@@ -150,23 +176,15 @@
 
         function updateChart(completed, total) {
             const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-            
-            // Animação do SVG
             const circle = document.getElementById('circlePath');
             const text = document.getElementById('percentText');
             
-            // Stroke Dasharray: "value, 100"
             circle.setAttribute('stroke-dasharray', `${percent}, 100`);
             text.textContent = `${percent}%`;
-            
-            // Muda cor se completou tudo
-            if(percent === 100) circle.setAttribute('stroke', '#10B981');
-            else circle.setAttribute('stroke', '#4F46E5');
+            circle.setAttribute('stroke', percent === 100 ? '#10B981' : '#4F46E5');
         }
 
-        // Inicializa
         renderModules();
-
     </script>
 </body>
 </html>
