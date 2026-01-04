@@ -4,168 +4,262 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escrever Redação</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #e9ecef; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 900px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        
-        /* Área da Esquerda (Editor) */
-        .editor-area { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        
-        /* Área da Direita (Infos) */
-        .info-area { display: flex; flex-direction: column; gap: 20px; }
-        .card-info { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --bg: #F9FAFB;
+            --surface: #ffffff;
+            --border: #E5E7EB;
+            --text: #1F2937;
+        }
 
-        h2 { margin-top: 0; color: #343a40; font-size: 18px; }
-        #temaDisplay { color: #007bff; font-weight: bold; font-size: 1.1em; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar (Esquerda) */
+        aside {
+            width: 300px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+            z-index: 10;
+        }
+
+        .brand { font-weight: 800; font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none;}
         
-        textarea { width: 100%; height: 500px; padding: 15px; border: 1px solid #ced4da; border-radius: 8px; font-size: 16px; resize: none; margin-top: 10px; box-sizing: border-box; line-height: 1.5; }
-        textarea:focus { outline: 2px solid #007bff; border-color: transparent; }
+        .info-box { background: #F3F4F6; padding: 16px; border-radius: 12px; }
+        .info-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; font-weight: 600; margin-bottom: 4px; }
+        .info-content { font-weight: 600; font-size: 1rem; color: #111827; }
 
-        .btn-enviar { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        .btn-enviar:hover { background: #218838; }
+        .timer-box { text-align: center; background: #EEF2FF; color: var(--primary); padding: 15px; border-radius: 12px; font-variant-numeric: tabular-nums; font-size: 1.5rem; font-weight: 700; }
 
-        /* Cronômetro */
-        .timer { font-size: 2em; font-weight: bold; text-align: center; color: #495057; font-family: monospace; }
+        /* Main Area (Direita) */
+        main { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
         
-        /* Boletim de Notas */
-        .scorecard { display: none; }
-        .comp-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        .comp-nota { font-weight: bold; }
-        .nota-final { font-size: 2.5em; text-align: center; color: #28a745; margin: 20px 0; font-weight: bold; }
-        .feedback-erro { color: #dc3545; font-size: 0.85em; margin-top: 5px; background: #fff5f5; padding: 5px; border-radius: 4px; }
+        .editor-container { width: 100%; max-width: 800px; position: relative; }
+        
+        .editor-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
+        .counters { font-size: 0.85rem; color: #6B7280; }
 
-        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+        textarea {
+            width: 100%; height: 60vh; padding: 24px;
+            border: 2px solid var(--border); border-radius: 12px;
+            font-size: 1.1rem; line-height: 1.6; font-family: 'Inter', sans-serif;
+            resize: none; outline: none; transition: border-color 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+
+        .btn-submit {
+            width: 100%; margin-top: 20px; padding: 16px;
+            background: var(--primary); color: white; border: none; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        .btn-submit:hover { background: #4338ca; transform: translateY(-2px); }
+        .btn-submit:disabled { background: #9CA3AF; cursor: not-allowed; transform: none; }
+
+        /* Results Modal/Section */
+        #results-area { display: none; width: 100%; max-width: 800px; margin-top: 40px; padding-bottom: 50px; }
+        
+        .score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .final-score { font-size: 3rem; font-weight: 800; color: var(--text); }
+        .final-score span { font-size: 1rem; color: #6B7280; font-weight: 500; }
+
+        .comp-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        .comp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .comp-title { font-weight: 600; color: var(--text); }
+        
+        /* Progress Bar */
+        .progress-bg { height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; width: 100%; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+        .feedback-item {
+            margin-top: 12px; padding: 12px; background: #FEF2F2; 
+            border-left: 4px solid var(--danger); border-radius: 4px; font-size: 0.9rem;
+        }
+        .feedback-title { font-weight: 700; color: #991B1B; margin-bottom: 4px; display: block; }
+        .feedback-fix { color: var(--success); font-weight: 600; margin-top: 4px; display: block; font-size: 0.85rem;}
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; }
+            aside { width: 100%; padding: 16px; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+            .info-box { display: none; } /* Esconde tema no mobile pra ganhar espaço */
+            .timer-box { font-size: 1.2rem; padding: 8px; }
+            main { padding: 20px; }
+            textarea { height: 50vh; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="editor-area">
-        <div style="margin-bottom: 20px;">
-            <span style="color:#6c757d; font-size: 0.9em;">TEMA DA REDAÇÃO:</span><br>
-            <span id="temaDisplay">Carregando tema...</span>
-        </div>
-        <textarea id="textoRedacao" placeholder="Comece a digitar sua redação aqui..."></textarea>
-        <button class="btn-enviar" onclick="enviarRedacao()" id="btnEnviar">ENTREGAR REDAÇÃO</button>
-    </div>
-
-    <div class="info-area">
-        <div class="card-info">
-            <h2>⏱️ Tempo Restante</h2>
-            <div class="timer" id="timer">01:00:00</div>
+    <aside>
+        <a href="index.html" class="brand">← Voltar</a>
+        
+        <div class="info-box">
+            <div class="info-label">Tema da Redação</div>
+            <div class="info-content" id="temaDisplay">Carregando...</div>
         </div>
 
-        <div class="card-info scorecard" id="scorecard">
-            <h2>📊 Boletim de Desempenho</h2>
-            <div class="nota-final" id="notaFinal">0</div>
-            
-            <div id="listaCompetencias">
+        <div class="timer-box" id="timer">01:00:00</div>
+        
+        <div style="flex:1"></div> </aside>
+
+    <main>
+        <div class="editor-container" id="editorArea">
+            <div class="editor-header">
+                <h3>Sua Redação</h3>
+                <div class="counters">
+                    <span id="wordCount">0</span> palavras • <span id="charCount">0</span> caracteres
                 </div>
+            </div>
+            
+            <textarea id="textoRedacao" placeholder="Comece a escrever sua redação aqui..."></textarea>
+            <button class="btn-submit" onclick="enviarRedacao()" id="btnEnviar">Entregar Redação</button>
         </div>
-    </div>
-</div>
+
+        <div id="results-area">
+            <div class="score-header">
+                <div>
+                    <h2>Boletim de Desempenho</h2>
+                    <p style="color:#6B7280">Análise baseada nos critérios do ENEM</p>
+                </div>
+                <div class="final-score" id="notaFinal">0 <span>/ 1000</span></div>
+            </div>
+            <div id="competenciasList"></div>
+            
+            <button class="btn-submit" style="background:var(--bg); color:var(--text); border:1px solid var(--border)" onclick="location.reload()">Escrever Outra</button>
+        </div>
+    </main>
 
 <script>
-    // URL DO SEU BACKEND (Troque se necessário)
+    // ⚠️ TROQUE PELA URL DO SEU RENDER
     const API_URL = "https://backend-redacao.onrender.com/api/enviar-redacao";
 
-    // Inicialização
+    // Setup inicial
     const tema = localStorage.getItem('temaRedacao') || "Tema Livre";
     document.getElementById('temaDisplay').innerText = tema;
 
-    // Cronômetro (1 Hora)
-    let tempoRestante = 3600; // segundos
-    const timerElem = document.getElementById('timer');
-    
-    const intervalo = setInterval(() => {
-        tempoRestante--;
-        if (tempoRestante < 0) {
-            clearInterval(intervalo);
-            alert("Tempo esgotado!");
-            return;
-        }
-        const h = Math.floor(tempoRestante / 3600).toString().padStart(2, '0');
-        const m = Math.floor((tempoRestante % 3600) / 60).toString().padStart(2, '0');
-        const s = (tempoRestante % 60).toString().padStart(2, '0');
-        timerElem.innerText = `${h}:${m}:${s}`;
+    // Contadores em tempo real
+    const textarea = document.getElementById('textoRedacao');
+    textarea.addEventListener('input', () => {
+        const txt = textarea.value;
+        document.getElementById('charCount').innerText = txt.length;
+        document.getElementById('wordCount').innerText = txt.trim() === '' ? 0 : txt.trim().split(/\s+/).length;
+    });
+
+    // Cronômetro
+    let tempo = 3600;
+    const timerInterval = setInterval(() => {
+        tempo--;
+        if(tempo < 0) { clearInterval(timerInterval); alert("Tempo Esgotado!"); return; }
+        const h = Math.floor(tempo/3600).toString().padStart(2,'0');
+        const m = Math.floor((tempo%3600)/60).toString().padStart(2,'0');
+        const s = (tempo%60).toString().padStart(2,'0');
+        document.getElementById('timer').innerText = `${h}:${m}:${s}`;
     }, 1000);
 
-    // Envio
+    // Lógica de Envio
     async function enviarRedacao() {
-        const texto = document.getElementById('textoRedacao').value;
+        const txt = textarea.value;
+        if(txt.length < 50) return alert("Texto muito curto!");
+
         const btn = document.getElementById('btnEnviar');
-        const scorecard = document.getElementById('scorecard');
-
-        if (texto.split(' ').length < 10) return alert("Escreva um pouco mais!");
-
         btn.disabled = true;
         btn.innerText = "Corrigindo (IA Analisando)...";
 
         try {
-            const response = await fetch(API_URL, {
+            const res = await fetch(API_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                // Envia o TEXTO e o TEMA para o backend
-                body: JSON.stringify({ texto: texto, tema: tema })
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ texto: txt, tema: tema })
             });
+            const data = await res.json();
 
-            const data = await response.json();
-
-            if (data.sucesso) {
-                mostrarResultado(data.resultado);
-                clearInterval(intervalo); // Para o tempo
+            if(data.sucesso) {
+                mostrarResultados(data.resultado);
+                clearInterval(timerInterval);
+                document.getElementById('editorArea').style.display = 'none';
+                document.getElementById('results-area').style.display = 'block';
             } else {
-                alert("Erro: " + (data.erro || "Falha na correção"));
+                alert(data.erro || "Erro desconhecido");
+                btn.disabled = false;
+                btn.innerText = "Entregar Redação";
             }
-
-        } catch (e) {
+        } catch(e) {
             console.error(e);
-            alert("Erro de conexão com o servidor.");
-        } finally {
+            alert("Erro de conexão. Servidor pode estar dormindo (Cold Start). Tente novamente em 30s.");
             btn.disabled = false;
-            btn.innerText = "ENTREGAR REDAÇÃO";
+            btn.innerText = "Tentar Novamente";
         }
     }
 
-    function mostrarResultado(res) {
-        document.getElementById('scorecard').style.display = 'block';
-        document.getElementById('notaFinal').innerText = res.notaFinal;
-        
-        const lista = document.getElementById('listaCompetencias');
-        lista.innerHTML = '';
+    function mostrarResultados(res) {
+        document.getElementById('notaFinal').innerHTML = `${res.notaFinal} <span>/ 1000</span>`;
+        const container = document.getElementById('competenciasList');
+        container.innerHTML = '';
 
-        // Itera sobre as competencias (c1, c2, c3...)
-        Object.keys(res.competencias).forEach(key => {
-            const comp = res.competencias[key];
-            let cor = comp.nota >= 160 ? '#28a745' : (comp.nota >= 120 ? '#ffc107' : '#dc3545');
-            
+        // Erros Gerais (Spam)
+        if(res.analiseGeral && res.analiseGeral.length > 0) {
+            container.innerHTML += `<div style="background:#FEF2F2; color:#991B1B; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #FCA5A5">🚨 ${res.analiseGeral.join('<br>')}</div>`;
+        }
+
+        // Competências
+        const comps = res.competencias;
+        Object.keys(comps).forEach(key => {
+            const c = comps[key];
+            const percent = (c.nota / 200) * 100;
+            let color = '#10B981'; // Verde
+            if(c.nota < 120) color = '#EF4444'; // Vermelho
+            else if(c.nota < 160) color = '#F59E0B'; // Amarelo
+
             let html = `
-                <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom:10px">
-                    <div class="comp-row">
-                        <span>${comp.nome}</span>
-                        <span style="color:${cor}; font-weight:bold">${comp.nota}/200</span>
+                <div class="comp-card">
+                    <div class="comp-header">
+                        <span class="comp-title">${c.nome}</span>
+                        <span style="font-weight:700; color:${color}">${c.nota}/200</span>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width:${percent}%; background:${color}"></div>
                     </div>
             `;
 
-            // Lista os erros/dicas se houver
-            if (comp.erros && comp.erros.length > 0) {
-                comp.erros.forEach(erro => {
-                    html += `<div class="feedback-erro">⚠️ ${erro}</div>`;
+            if(c.erros && c.erros.length > 0) {
+                html += `<div style="margin-top:15px">`;
+                c.erros.forEach(err => {
+                    // Compatibilidade com V8/V9 (Objeto ou String)
+                    if(typeof err === 'object') {
+                        html += `
+                            <div class="feedback-item">
+                                <span class="feedback-title">${err.tipo}: ${err.descricao}</span>
+                                <div style="color:#4B5563; margin-bottom:4px">❌ Problema: ${err.exemplo}</div>
+                                <span class="feedback-fix">💡 Dica: ${err.acao}</span>
+                            </div>`;
+                    } else {
+                        html += `<div class="feedback-item">${err}</div>`;
+                    }
                 });
-            } else if (comp.nota === 200) {
-                 html += `<div style="color:#28a745; font-size:0.8em; margin-top:5px">✅ Excelente!</div>`;
+                html += `</div>`;
+            } else if (c.nota === 200) {
+                html += `<div style="margin-top:10px; color:#10B981; font-size:0.9rem">✨ Desempenho impecável!</div>`;
             }
 
             html += `</div>`;
-            lista.innerHTML += html;
+            container.innerHTML += html;
         });
-
-        // Se tiver erro global (spam etc)
-        if (res.analiseGeral && res.analiseGeral.length > 0) {
-             lista.innerHTML += `<div style="background:#ffd2d2; color:#a00; padding:10px; border-radius:5px; margin-top:10px">🚨 ${res.analiseGeral.join(' ')}</div>`;
-        }
     }
 </script>
-
 </body>
 </html>
