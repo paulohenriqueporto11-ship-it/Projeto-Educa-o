@@ -1,17 +1,20 @@
 /* ==========================================================================
    ESTUDA.IA - FOLHA DE ESTILOS MESTRA (MASTER STYLESHEET)
-   Versão: 9.0 (Full SaaS)
+   Versão: 10.0 (Full SaaS Edition)
    
    ÍNDICE:
-   1. Variáveis & Reset (Cores, Fontes)
-   2. Componentes Globais (Navbar, Botões, Containers)
-   3. Página Dashboard (Cards, Stats)
-   4. Página Editor (Textarea, Timer)
-   5. Página Resultados (Gráficos, Feedback)
-   6. Página Cronograma (Timeline, Checkboxes)
-   7. Página Simulados (Quiz, Botões de Resposta)
-   8. Componentes Especiais (Loading, Modais, Animações)
-   9. Responsividade (Mobile)
+   1.  Variáveis & Reset (Cores, Fontes)
+   2.  Componentes Globais (Navbar, Botões, Containers)
+   3.  Página Dashboard (Cards, Stats)
+   4.  Página Editor (Textarea, Timer)
+   5.  Página Resultados (Gráficos, Feedback)
+   6.  Página Cronograma V1 (Timeline, Checkboxes Básicos)
+   7.  Página Simulados V1 (Quiz Básico, Botões de Resposta)
+   8.  Componentes Especiais (Loading Hacker, Modais, Animações)
+   9.  NOVO: Simulados V2 (Menu de Matérias, Cards Coloridos)
+   10. NOVO: Cronograma V2 (Missões, Streak, Aulas de Vídeo)
+   11. NOVO: Onboarding (Seleção de Foco)
+   12. Responsividade (Ajustes Mobile)
    ========================================================================== */
 
 /* ==========================================================================
@@ -23,18 +26,18 @@
     --primary-hover: #4338ca; /* Estado Hover */
     --secondary: #EC4899;     /* Rosa (Detalhes/Destaques) */
     
-    --bg: #F3F4F6;           /* Fundo da Aplicação (Cinza Suave) */
-    --surface: #ffffff;      /* Fundo de Cards/Modais (Branco) */
+    --bg: #F3F4F6;            /* Fundo da Aplicação (Cinza Suave) */
+    --surface: #ffffff;       /* Fundo de Cards/Modais (Branco) */
     
-    --text-main: #111827;    /* Texto Principal (Quase Preto) */
-    --text-muted: #6B7280;   /* Texto Secundário (Cinza) */
+    --text-main: #111827;     /* Texto Principal (Quase Preto) */
+    --text-muted: #6B7280;    /* Texto Secundário (Cinza) */
     
-    --border: #E5E7EB;       /* Cor de Bordas e Divisórias */
+    --border: #E5E7EB;        /* Cor de Bordas e Divisórias */
     
     /* --- Cores de Feedback (Semânticas) --- */
-    --success: #10B981;      /* Sucesso/Acerto */
-    --warning: #F59E0B;      /* Atenção/Médio */
-    --danger: #EF4444;       /* Erro/Crítico */
+    --success: #10B981;       /* Sucesso/Acerto */
+    --warning: #F59E0B;       /* Atenção/Médio */
+    --danger: #EF4444;        /* Erro/Crítico */
     
     /* --- Tipografia e Sombras --- */
     --font-stack: 'Inter', system-ui, -apple-system, sans-serif;
@@ -51,7 +54,7 @@ body {
     background-color: var(--bg);
     color: var(--text-main);
     min-height: 100vh;
-    -webkit-font-smoothing: antialiased; /* Renderização de fonte suave */
+    -webkit-font-smoothing: antialiased;
 }
 
 a { text-decoration: none; color: inherit; transition: 0.2s; }
@@ -61,16 +64,16 @@ button { font-family: inherit; cursor: pointer; }
    2. COMPONENTES GERAIS
    ========================================================================== */
 
-/* Navbar com Efeito Glassmorphism (Vidro) */
+/* Navbar com Efeito Glassmorphism */
 nav {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky; /* Cola no topo ao rolar */
+    position: sticky;
     top: 0;
     z-index: 50;
 }
@@ -82,7 +85,7 @@ nav {
     display: flex; align-items: center; gap: 8px;
 }
 
-/* Containers de Layout */
+/* Containers */
 .container {
     max-width: 1100px;
     margin: 40px auto;
@@ -93,7 +96,7 @@ nav {
     display: flex; flex-direction: column; align-items: center; padding: 20px;
 }
 
-/* Botões Padrão (Solid) */
+/* Botões Padrão */
 .btn {
     display: inline-flex; align-items: center; justify-content: center;
     padding: 12px 24px;
@@ -106,7 +109,7 @@ nav {
 .btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .btn:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; opacity: 0.7; }
 
-/* Botões Outline (Borda transparente) */
+/* Botões Outline */
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
 .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #EEF2FF; }
 
@@ -114,7 +117,6 @@ nav {
    3. PÁGINA DASHBOARD
    ========================================================================== */
 
-/* Grid de Estatísticas (Topo) */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -131,7 +133,6 @@ nav {
 .stat-val { font-size: 2.2rem; font-weight: 800; color: var(--text-main); line-height: 1; margin-bottom: 5px; }
 .stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-/* Grid de Ferramentas (Cards Grandes) */
 .tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -145,11 +146,7 @@ nav {
     display: flex; flex-direction: column; justify-content: space-between; height: 100%;
 }
 
-.tool-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--primary);
-    box-shadow: var(--shadow-lg);
-}
+.tool-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: var(--shadow-lg); }
 
 .tool-icon { 
     font-size: 2.5rem; margin-bottom: 20px; 
@@ -170,9 +167,7 @@ nav {
     border: 1px solid var(--border);
 }
 
-.editor-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-}
+.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
 .timer-badge {
     background: #EEF2FF; color: var(--primary);
@@ -183,10 +178,8 @@ nav {
 textarea.main-input {
     width: 100%; height: 60vh; padding: 24px;
     border: 2px solid var(--border); border-radius: 12px;
-    font-size: 1.15rem; line-height: 1.7;
-    resize: none;
-    font-family: 'Georgia', serif; /* Fonte serifada para conforto de leitura */
-    outline: none; transition: border 0.2s; color: #374151;
+    font-size: 1.15rem; line-height: 1.7; resize: none;
+    font-family: 'Georgia', serif; outline: none; transition: border 0.2s; color: #374151;
 }
 
 textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
@@ -202,28 +195,22 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
     animation: slideUp 0.5s ease;
 }
 
-.grid-results {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;
-}
+.grid-results { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
 
-/* Nota Gigante */
 .score-hero {
     background: var(--surface); padding: 30px;
     border-radius: 16px; border: 1px solid var(--border);
-    text-align: center;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;
 }
 .score-hero .val { font-size: 5rem; font-weight: 900; line-height: 1; color: var(--primary); letter-spacing: -3px; }
 .score-hero .label { color: var(--text-muted); font-weight: 600; margin-top: 10px; }
 
-/* Container do Gráfico Radar */
 .chart-box {
     background: var(--surface); padding: 20px;
     border-radius: 16px; border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
 }
 
-/* Cards de Competência (C1, C2...) */
 .comp-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 12px; padding: 24px; margin-bottom: 16px;
@@ -232,11 +219,9 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 
 .comp-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 15px; font-size: 1.1rem; }
 
-/* Barra de Progresso Interna */
 .progress-track { background: #F3F4F6; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
 .progress-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
 
-/* Feedback de Erros */
 .feedback-item {
     background: #FEF2F2; border-left: 4px solid var(--danger);
     padding: 16px; margin-top: 12px; border-radius: 0 8px 8px 0; font-size: 0.95rem;
@@ -248,10 +233,9 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 }
 
 /* ==========================================================================
-   6. PÁGINA CRONOGRAMA (Timeline & Módulos)
+   6. PÁGINA CRONOGRAMA V1 (Timeline & Gráfico)
    ========================================================================== */
 
-/* Header com Gráfico Circular */
 .progress-header {
     background: var(--surface); padding: 24px; border-radius: 16px;
     border: 1px solid var(--border); margin-bottom: 30px;
@@ -300,14 +284,12 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 .task-item.completed .task-label { text-decoration: line-through; color: var(--text-muted); }
 
 /* ==========================================================================
-   7. PÁGINA SIMULADOS (Quiz)
+   7. PÁGINA SIMULADOS V1 (Quiz)
    ========================================================================== */
 
 .quiz-container {
-    max-width: 800px; margin: 0 auto;
-    background: var(--surface); padding: 40px;
-    border-radius: 20px; box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border); text-align: center;
+    max-width: 800px; margin: 0 auto; background: var(--surface); padding: 40px;
+    border-radius: 20px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); text-align: center;
 }
 
 .question-text {
@@ -318,18 +300,12 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 .options-grid { display: grid; gap: 15px; }
 
 .option-btn {
-    width: 100%; padding: 18px; text-align: left;
-    background: #fff; border: 2px solid var(--border);
-    border-radius: 12px; font-size: 1rem; color: var(--text-main);
-    cursor: pointer; transition: all 0.2s; position: relative;
+    width: 100%; padding: 18px; text-align: left; background: #fff; border: 2px solid var(--border);
+    border-radius: 12px; font-size: 1rem; color: var(--text-main); cursor: pointer; transition: all 0.2s; position: relative;
 }
-
-.option-btn:hover:not(:disabled) {
-    border-color: var(--primary); background: #EEF2FF; transform: translateX(5px);
-}
+.option-btn:hover:not(:disabled) { border-color: var(--primary); background: #EEF2FF; transform: translateX(5px); }
 .option-btn:disabled { cursor: default; opacity: 0.9; }
 
-/* Estados de Resposta */
 .option-btn.correct { background: #D1FAE5; border-color: var(--success); color: #065F46; }
 .option-btn.correct::after { content: '✅'; position: absolute; right: 20px; }
 
@@ -347,67 +323,37 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
    8. COMPONENTES ESPECIAIS (Loading & Modais)
    ========================================================================== */
 
-/* Hacker Loading (Tela cheia) */
 .loading-overlay {
-    display: none;
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255,255,255,0.95);
-    z-index: 200;
-    backdrop-filter: blur(5px);
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.95); z-index: 200; backdrop-filter: blur(5px);
     align-items: center; justify-content: center; flex-direction: column;
 }
 
 .loader {
-    width: 60px; height: 60px;
-    border: 6px solid #EEF2FF; border-top-color: var(--primary);
+    width: 60px; height: 60px; border: 6px solid #EEF2FF; border-top-color: var(--primary);
     border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
 }
 
-.loading-text {
-    font-weight: 600; color: var(--text-main); font-size: 1.2rem;
-    animation: pulse 1.5s infinite;
-}
+.loading-text { font-weight: 600; color: var(--text-main); font-size: 1.2rem; animation: pulse 1.5s infinite; }
 
-/* Modal Genérico */
 .modal-overlay {
-    display: none;
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100;
     align-items: center; justify-content: center;
 }
 
-.modal-content {
-    background: var(--surface); padding: 30px;
-    border-radius: 16px; width: 90%; max-width: 450px;
-    animation: slideUp 0.3s ease;
-}
+.modal-content { background: var(--surface); padding: 30px; border-radius: 16px; width: 90%; max-width: 450px; animation: slideUp 0.3s ease; }
 
 .modal-option {
-    width: 100%; padding: 16px; margin: 8px 0;
-    border: 1px solid var(--border); border-radius: 10px;
-    background: var(--surface); text-align: left;
-    cursor: pointer; display: flex; align-items: center; gap: 15px;
-    transition: 0.2s;
+    width: 100%; padding: 16px; margin: 8px 0; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); text-align: left; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: 0.2s;
 }
 .modal-option:hover { border-color: var(--primary); background: #EEF2FF; }
 
 /* ==========================================================================
-   9. ANIMAÇÕES & RESPONSIVIDADE
+   9. NOVO: SIMULADOS V2 (Menu de Matérias)
    ========================================================================== */
 
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Mobile (Celulares) */
-@media (max-width: 768px) {
-    .container { margin: 20px auto; }
-
-   /* ==========================================================================
-   10. ATUALIZAÇÕES V2 (Simulados & Aulas)
-   ========================================================================== */
-
-/* --- SIMULADOS: Menu de Matérias --- */
 .subjects-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;
 }
@@ -430,7 +376,51 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 .subject-title { font-weight: 800; font-size: 1.2rem; color: var(--text-main); margin-bottom: 5px; }
 .subject-count { color: var(--text-muted); font-size: 0.9rem; }
 
-/* --- CRONOGRAMA: Aula Expandida --- */
+/* ==========================================================================
+   10. NOVO: CRONOGRAMA V2 (Missões, Streak, Aulas)
+   ========================================================================== */
+
+/* Streak Bar (Barra de Fogo) */
+.streak-bar {
+    background: linear-gradient(135deg, #FF9068 0%, #FF4B1F 100%);
+    color: white; padding: 15px 20px; border-radius: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 30px; box-shadow: 0 4px 15px rgba(255, 75, 31, 0.3);
+}
+.streak-count { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+
+/* Mission Card (Card de Tarefa Diária) */
+.mission-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 15px;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: 0.2s; position: relative; overflow: hidden;
+}
+.mission-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+
+.mission-left { display: flex; align-items: center; gap: 15px; }
+.mission-icon { 
+    width: 50px; height: 50px; background: #EEF2FF; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+}
+.mission-info h3 { font-size: 1.1rem; margin-bottom: 4px; color: var(--text-main); }
+.mission-info p { font-size: 0.9rem; color: var(--text-muted); }
+.xp-badge { 
+    background: #F3F4F6; color: var(--text-muted); padding: 4px 8px; 
+    border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-block; margin-top: 5px;
+}
+
+.btn-start {
+    background: var(--primary); color: white; border: none;
+    padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    text-decoration: none; font-size: 0.9rem;
+}
+.btn-start:hover { background: var(--primary-hover); }
+
+.mission-done { opacity: 0.6; background: #F9FAFB; pointer-events: none; }
+.mission-done .btn-start { background: var(--success); }
+
+/* Aulas de Vídeo (Seção Expansível) */
 .lesson-content {
     display: none; padding: 20px; background: #F8FAFC;
     border-top: 1px solid var(--border); animation: slideDown 0.3s ease;
@@ -438,7 +428,7 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 .lesson-content.active { display: block; }
 
 .video-responsive {
-    position: relative; padding-bottom: 56.25%; /* 16:9 */
+    position: relative; padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
     height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px;
     box-shadow: var(--shadow-md);
 }
@@ -449,16 +439,69 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 .lesson-summary h4 { margin-bottom: 10px; color: var(--primary); }
 .lesson-summary p { font-size: 0.95rem; line-height: 1.6; color: var(--text-main); margin-bottom: 15px; }
 
-/* Botão de Expandir */
 .btn-expand {
     background: none; border: none; font-size: 1.2rem; color: var(--text-muted);
     cursor: pointer; transition: 0.2s; margin-left: 10px;
 }
 .btn-expand:hover { color: var(--primary); }
 
+/* ==========================================================================
+   11. NOVO: ONBOARDING (Seleção de Foco)
+   ========================================================================== */
+
+.focus-selection-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg); z-index: 200;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+}
+
+.focus-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px; width: 100%; max-width: 800px; margin-top: 30px;
+}
+
+.focus-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 16px; padding: 20px; cursor: pointer; text-align: center;
+    transition: all 0.2s;
+}
+
+.focus-card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: var(--shadow-md); }
+.focus-card.active { border-color: var(--primary); background: #EEF2FF; }
+
+.focus-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+.focus-title { font-weight: 700; color: var(--text-main); }
+
+.current-focus-badge {
+    background: rgba(255,255,255,0.2); color: white; padding: 5px 12px;
+    border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.5);
+}
+
+/* ==========================================================================
+   12. ANIMAÇÕES & RESPONSIVIDADE
+   ========================================================================== */
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Mobile (Celulares) - AQUI SÓ ENTRA O QUE FOR DIFERENTE NO MOBILE */
+@media (max-width: 768px) {
+    .container { margin: 20px auto; }
+    
     textarea.main-input { height: 50vh; }
+    
     .score-hero .val { font-size: 4rem; }
+    
     .grid-results { grid-template-columns: 1fr; }
+    
     .progress-header { flex-direction: column; text-align: center; gap: 20px; }
+    
+    /* Ajuste dos cards de missão no mobile */
+    .mission-card { flex-direction: column; text-align: center; gap: 15px; }
+    .mission-left { flex-direction: column; }
+    .btn-start { width: 100%; }
 }
