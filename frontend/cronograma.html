@@ -12,36 +12,40 @@
 </head>
 <body>
 
-    <div id="configModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 650px;">
-            <h2 style="margin-bottom: 10px;">Personalize seu Estudo</h2>
-            <p style="color:var(--text-muted); margin-bottom: 20px;">Escolha o que focar. Presets ajustam as matérias automaticamente.</p>
-
-            <div class="focus-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 10px; margin-bottom: 20px;">
-                <button class="btn-outline" onclick="applyPreset('med')">🩺 Medicina</button>
-                <button class="btn-outline" onclick="applyPreset('eng')">📐 Engenharia</button>
-                <button class="btn-outline" onclick="applyPreset('dir')">⚖️ Direito</button>
+    <div id="statsModal" class="stats-overlay">
+        <div class="stats-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                <h2>📊 Seu Desempenho</h2>
+                <button class="btn-outline" style="border:none; color:white; font-size:1.5rem;" onclick="closeStats()">×</button>
             </div>
 
-            <label style="font-weight:700; font-size:0.9rem;">MATÉRIAS SELECIONADAS</label>
-            <div class="chips-container" id="subjectChips">
-                <div class="subject-chip" data-val="mat" onclick="toggleSubject(this)">Matemática</div>
-                <div class="subject-chip" data-val="nat" onclick="toggleSubject(this)">Natureza</div>
-                <div class="subject-chip" data-val="hum" onclick="toggleSubject(this)">Humanas</div>
-                <div class="subject-chip" data-val="lin" onclick="toggleSubject(this)">Linguagens</div>
-                <div class="subject-chip" data-val="red" onclick="toggleSubject(this)">Redação</div>
+            <div class="big-stats-grid">
+                <div class="big-stat">
+                    <div class="big-val" id="statTotalMissions">0</div>
+                    <div class="big-label">Missões Concluídas</div>
+                </div>
+                <div class="big-stat">
+                    <div class="big-val" id="statTotalDays">0</div>
+                    <div class="big-label">Dias Estudados</div>
+                </div>
+                <div class="big-stat">
+                    <div class="big-val" id="statMaxStreak">0</div>
+                    <div class="big-label">Maior Ofensiva</div>
+                </div>
             </div>
 
-            <label style="font-weight:700; font-size:0.9rem; margin-top:15px;">INTENSIDADE DIÁRIA</label>
-            <div class="intensity-selector">
-                <button class="intensity-btn" data-val="leve" onclick="setIntensity('leve')">Leve (1)</button>
-                <button class="intensity-btn" data-val="medio" onclick="setIntensity('medio')">Médio (3)</button>
-                <button class="intensity-btn" data-val="hard" onclick="setIntensity('hard')">Hardcore (5)</button>
+            <h3 style="color:#9CA3AF; font-size:0.9rem; text-transform:uppercase; margin-bottom:10px;">Consistência (Últimos 3 Meses)</h3>
+            <div class="heatmap-container">
+                <div class="heatmap-grid" id="heatmap"></div>
             </div>
-
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeConfig()">Cancelar</button>
-                <button class="btn" style="flex:2" onclick="saveConfig()">Salvar Alterações</button>
+            
+            <div style="margin-top:20px; display:flex; gap:10px; font-size:0.8rem; color:#9CA3AF; align-items:center;">
+                <span>Menos</span>
+                <div class="day-square" data-level="0"></div>
+                <div class="day-square" data-level="1"></div>
+                <div class="day-square" data-level="2"></div>
+                <div class="day-square" data-level="3"></div>
+                <span>Mais</span>
             </div>
         </div>
     </div>
@@ -49,7 +53,8 @@
     <nav>
         <div class="logo">✨ Estuda.IA</div>
         <div style="display:flex; align-items:center; gap:15px;">
-            <div class="study-timer" id="globalTimer" title="Tempo total estudado">00:00:00</div>
+            <div class="study-timer" id="globalTimer">00:00:00</div>
+            <button class="btn-outline" style="border:none; font-size:1.2rem;" onclick="openStats()">📊</button>
             <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Sair</a>
         </div>
     </nav>
@@ -69,18 +74,8 @@
             </div>
             <div style="text-align:right;">
                 <div style="font-size:0.8rem; opacity:0.8">Ofensiva</div>
-                <div style="font-weight:800">🔥 <span id="streakDay">0</span> dias</div>
+                <div style="font-weight:800; color:#F59E0B">🔥 <span id="streakDay">0</span> dias</div>
             </div>
-        </div>
-
-        <div class="streak-bar" style="background:var(--surface); color:var(--text-main); border:1px solid var(--border); box-shadow:var(--shadow-sm);">
-            <div>
-                <div style="font-size: 0.9rem; color:var(--text-muted);">Meta de Hoje</div>
-                <div style="font-weight: 700; font-size:1.1rem;" id="todayGoalLabel">--</div>
-            </div>
-            <button class="btn" style="padding: 8px 20px; font-size:0.9rem;" onclick="openConfig()">
-                ⚙️ Configurar Rotina
-            </button>
         </div>
 
         <div class="view-toggle">
@@ -90,177 +85,130 @@
 
         <div id="dailyContainer">
             <div id="missionsList"></div>
+            
+            <div id="bonusContainer" style="display:none; text-align:center; margin-top:30px; padding-top:20px; border-top:1px dashed var(--border);">
+                <p style="color:var(--text-muted); margin-bottom:15px;">Você completou tudo por hoje! Que tal um desafio extra?</p>
+                <button class="btn" style="background: linear-gradient(135deg, #4F46E5, #9333EA);" onclick="generateBonusMission()">
+                    💎 Gerar Missão Bônus (+300 XP)
+                </button>
+            </div>
         </div>
 
         <div id="weeklyContainer" style="display: none;">
-            <h3 style="margin-bottom: 20px; text-align:center;">Seu Planejamento</h3>
             <div class="weekly-grid" id="weeklyGrid"></div>
-            <div style="margin-top:30px; text-align:center; color:var(--text-muted); font-size:0.9rem;">
-                * A carga horária é baseada na sua configuração de intensidade.
-            </div>
         </div>
 
     </div>
 
     <script>
         // =========================================================
-        // 1. DADOS (DATA LAYER)
+        // 1. DADOS & ESTADO
         // =========================================================
-        const CONSTANTS = {
-            XP_PER_LEVEL: 1000,
-            INTENSITY_MAP: { 'leve': 1, 'medio': 3, 'hard': 5 }
-        };
+        const CONSTANTS = { XP_PER_LEVEL: 1000 };
+        
+        // Simulação de "Banco de Missões Bônus"
+        const BONUS_POOL = [
+            { t: "Desafio de Lógica", d: "Resolva 1 problema difícil de análise combinatória.", i: "🧠", url: "simulados.html", type: "Matemática" },
+            { t: "Repertório Flash", d: "Leia sobre 1 filósofo novo em 10min.", i: "⚡", url: "redacao.html" },
+            { t: "Inglês Rápido", d: "Traduza o refrão de uma música.", i: "🎵", url: "simulados.html", type: "Linguagens" }
+        ];
 
-        const MISSION_POOL = {
-            mat: [
-                { t: "Matemática Básica", d: "Revise frações e porcentagem.", i: "➗", url: "simulados.html", type: "Matemática" },
-                { t: "Geometria Plana", d: "Áreas e perímetros.", i: "📐", url: "simulados.html", type: "Matemática" },
-                { t: "Funções", d: "Resolva 3 problemas de 1º grau.", i: "📈", url: "simulados.html", type: "Matemática" },
-                { t: "Estatística", d: "Média, Moda e Mediana.", i: "📊", url: "simulados.html", type: "Matemática" }
-            ],
-            nat: [
-                { t: "Mecânica", d: "Leis de Newton na prática.", i: "🍎", url: "simulados.html", type: "Natureza" },
-                { t: "Estequiometria", d: "Cálculos químicos básicos.", i: "🧪", url: "simulados.html", type: "Natureza" },
-                { t: "Citologia", d: "Estrutura das células.", i: "🧬", url: "simulados.html", type: "Natureza" }
-            ],
-            hum: [
-                { t: "Brasil Colônia", d: "Ciclo do Açúcar e Ouro.", i: "🏰", url: "simulados.html", type: "Humanas" },
-                { t: "Geografia Física", d: "Climas e Relevo do Brasil.", i: "🌍", url: "simulados.html", type: "Humanas" },
-                { t: "Filosofia Antiga", d: "Sócrates, Platão e Aristóteles.", i: "🏛️", url: "simulados.html", type: "Humanas" }
-            ],
-            lin: [
-                { t: "Figuras de Linguagem", d: "Metáfora, Metonímia, etc.", i: "🗣️", url: "simulados.html", type: "Linguagens" },
-                { t: "Interpretação", d: "Leia e resolva 5 questões.", i: "📖", url: "simulados.html", type: "Linguagens" }
-            ],
-            red: [
-                { t: "Redação Completa", d: "Escreva sobre um tema atual.", i: "📝", url: "redacao.html" },
-                { t: "Competência 1", d: "Revise erros de crase.", i: "✍️", url: "redacao.html" },
-                { t: "Projeto de Texto", d: "Planeje apenas os argumentos.", i: "🧠", url: "redacao.html" }
-            ]
-        };
-
-        // =========================================================
-        // 2. ESTADO E PERSISTÊNCIA
-        // =========================================================
-        let state = JSON.parse(localStorage.getItem('estudaia_state_v3')) || {
+        let state = JSON.parse(localStorage.getItem('estudaia_state_v4')) || {
             config: { subjects: ['red', 'mat'], intensity: 'medio' },
             user: { xp: 0, streak: 1, lastLogin: null },
-            dailyPlan: { date: null, missions: [] },
-            history: {} // '2023-10-27': ['mission_id_1']
+            dailyPlan: { date: null, missions: [], bonusAdded: false },
+            history: {} // '2023-10-27': ['id1', 'id2']
         };
 
-        const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const todayDate = new Date().toISOString().split('T')[0];
 
         function saveState() {
-            localStorage.setItem('estudaia_state_v3', JSON.stringify(state));
+            localStorage.setItem('estudaia_state_v4', JSON.stringify(state));
         }
 
         // =========================================================
-        // 3. LÓGICA DE TIMER (SEM DRIFT)
-        // =========================================================
-        function initTimer() {
-            // Se não tiver tempo de início, define agora
-            if(!localStorage.getItem('timer_start_check')) {
-                localStorage.setItem('timer_start_check', Date.now());
-                localStorage.setItem('timer_bank', 0); // Tempo acumulado em ms
-            }
-
-            setInterval(() => {
-                // O tempo total é o Banco Salvo + (Agora - Último Start)
-                // Para simplificar no MVP, vamos somar e salvar a cada segundo, 
-                // mas usar Date.now() garante precisão se a página recarregar.
-                
-                let totalSecs = parseInt(localStorage.getItem('estudaia_total_seconds') || 0);
-                // Só incrementa se a janela estiver focada (opcional, aqui conta sempre que aberto)
-                totalSecs++;
-                localStorage.setItem('estudaia_total_seconds', totalSecs);
-                
-                const h = Math.floor(totalSecs / 3600).toString().padStart(2,'0');
-                const m = Math.floor((totalSecs % 3600) / 60).toString().padStart(2,'0');
-                const s = (totalSecs % 60).toString().padStart(2,'0');
-                document.getElementById('globalTimer').innerText = `${h}:${m}:${s}`;
-            }, 1000);
-        }
-
-        // =========================================================
-        // 4. GERAÇÃO DE MISSÕES (ROTATIVAS)
+        // 2. GERAÇÃO DE MISSÕES (Normal & Bônus)
         // =========================================================
         function checkAndGenerateDailyMissions() {
-            // Se já tem plano pra hoje, não faz nada
-            if (state.dailyPlan.date === todayDate && state.dailyPlan.missions.length > 0) {
-                renderMissionsUI();
-                return;
-            }
-
-            // Gera novo plano
-            const count = CONSTANTS.INTENSITY_MAP[state.config.intensity];
-            let activeSubjects = [...state.config.subjects];
-            if (activeSubjects.length === 0) activeSubjects = ['red']; // Fallback
-
-            let newMissions = [];
-            
-            // Usa o dia do ano para rotacionar as missões (Shuffle determinístico)
-            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
-
-            for (let i = 0; i < count; i++) {
-                const subKey = activeSubjects[i % activeSubjects.length];
-                const pool = MISSION_POOL[subKey];
+            // Se mudou o dia, reseta
+            if (state.dailyPlan.date !== todayDate) {
+                // Lógica de Streak: Se pulou mais de 1 dia, zera (exceto primeiro uso)
+                if (state.user.lastLogin) {
+                    const diff = (new Date(todayDate) - new Date(state.user.lastLogin)) / (1000 * 3600 * 24);
+                    if (diff >= 2) state.user.streak = 0; // Perdeu
+                    else if (diff >= 1) state.user.streak++; // Ganhou
+                }
                 
-                // Pega missão baseada no dia para não repetir sempre a primeira
-                const missionIndex = (dayOfYear + i) % pool.length; 
-                const missionData = pool[missionIndex];
+                // Gera novas missões (Mockup simplificado do V3)
+                const count = state.config.intensity === 'hard' ? 5 : 3;
+                let newMissions = [];
+                for(let i=0; i<count; i++) {
+                    newMissions.push({
+                        id: `${todayDate}_${i}`,
+                        t: "Missão Diária " + (i+1),
+                        d: "Foco na matéria principal.",
+                        i: "📚",
+                        xp: 150,
+                        url: "simulados.html"
+                    });
+                }
 
-                newMissions.push({
-                    id: `${todayDate}_${subKey}_${i}`,
-                    ...missionData
-                });
+                state.dailyPlan = { date: todayDate, missions: newMissions, bonusAdded: false };
+                state.user.lastLogin = todayDate;
+                saveState();
             }
-
-            // Atualiza Streak se for dia consecutivo
-            if (state.user.lastLogin) {
-                const last = new Date(state.user.lastLogin);
-                const now = new Date(todayDate);
-                const diffTime = Math.abs(now - last);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                
-                if (diffDays === 1) state.user.streak++;
-                else if (diffDays > 1) state.user.streak = 1;
-            }
-            
-            state.user.lastLogin = todayDate;
-            state.dailyPlan = { date: todayDate, missions: newMissions };
-            saveState();
             renderMissionsUI();
         }
 
+        function generateBonusMission() {
+            if(state.dailyPlan.bonusAdded) return;
+            
+            const randomBonus = BONUS_POOL[Math.floor(Math.random() * BONUS_POOL.length)];
+            const bonusMission = {
+                ...randomBonus,
+                id: `${todayDate}_bonus`,
+                isBonus: true,
+                xp: 300
+            };
+            
+            state.dailyPlan.missions.push(bonusMission);
+            state.dailyPlan.bonusAdded = true;
+            saveState();
+            renderMissionsUI();
+            
+            // Efeito visual
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+        }
+
         // =========================================================
-        // 5. RENDERIZAÇÃO DA UI
+        // 3. UI RENDER (Cards e Lógica de Conclusão)
         // =========================================================
         function renderMissionsUI() {
             const list = document.getElementById('missionsList');
             const history = state.history[todayDate] || [];
             let html = '';
+            let completedCount = 0;
 
             state.dailyPlan.missions.forEach(m => {
                 const isDone = history.includes(m.id);
-                const btnAction = isDone ? 'Revisar' : (m.url.includes('redacao') ? 'Escrever' : 'Iniciar');
+                if (isDone) completedCount++;
                 
-                // Ação do botão: Se é simulado, passa o tipo
-                const clickFn = m.url.includes('simulados') 
-                    ? `goToSimulado('${m.type}', '${m.id}')`
-                    : `goToLink('${m.url}', '${m.id}')`;
+                // Estilo especial se for bônus
+                const bonusClass = m.isBonus ? 'bonus' : '';
+                const icon = m.isBonus ? '💎' : m.i;
 
                 html += `
-                    <div class="mission-card ${isDone ? 'mission-done' : ''}">
+                    <div class="mission-card ${bonusClass} ${isDone ? 'mission-done' : ''}">
                         <div class="mission-left">
-                            <div class="mission-icon">${m.i}</div>
+                            <div class="mission-icon">${icon}</div>
                             <div class="mission-info">
-                                <h3>${m.t}</h3>
+                                <h3>${m.t} ${m.isBonus ? '<span style="font-size:0.7em; color:#FBBF24">★ BÔNUS</span>' : ''}</h3>
                                 <p>${m.d}</p>
+                                <span class="xp-badge">+${m.xp} XP</span>
                             </div>
                         </div>
-                        <button class="btn-start" onclick="${clickFn}">
-                            ${isDone ? 'Concluído ✅' : btnAction + ' →'}
+                        <button class="btn-start" onclick="completeMission('${m.id}', ${m.xp})">
+                            ${isDone ? 'Feito ✅' : 'Iniciar'}
                         </button>
                     </div>
                 `;
@@ -268,184 +216,144 @@
 
             list.innerHTML = html;
             updateGamificationUI();
+
+            // Mostra botão de bônus se completou todas as normais e ainda não pegou bônus
+            const totalNormais = state.dailyPlan.missions.filter(m => !m.isBonus).length;
+            const normaisFeitas = state.dailyPlan.missions.filter(m => !m.isBonus && history.includes(m.id)).length;
             
-            // Atualiza texto da meta
-            const total = state.dailyPlan.missions.length;
-            const done = history.length;
-            document.getElementById('todayGoalLabel').innerText = `${done}/${total} Concluídas`;
+            if (normaisFeitas >= totalNormais && !state.dailyPlan.bonusAdded) {
+                document.getElementById('bonusContainer').style.display = 'block';
+            } else {
+                document.getElementById('bonusContainer').style.display = 'none';
+            }
         }
 
-        function updateGamificationUI() {
-            const xp = state.user.xp;
-            const level = Math.floor(xp / CONSTANTS.XP_PER_LEVEL) + 1;
-            const xpInLevel = xp % CONSTANTS.XP_PER_LEVEL;
-            const percent = (xpInLevel / CONSTANTS.XP_PER_LEVEL) * 100;
-
-            document.getElementById('userLevel').innerText = level;
-            document.getElementById('lvlNum').innerText = level;
-            document.getElementById('xpDisplay').innerText = `${xpInLevel} / ${CONSTANTS.XP_PER_LEVEL} XP`;
-            document.getElementById('xpBar').style.width = `${percent}%`;
-            document.getElementById('streakDay').innerText = state.user.streak;
-        }
-
-        function renderWeeklyView() {
-            const container = document.getElementById('weeklyGrid');
-            const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            const todayIdx = new Date().getDay();
-            const intensityVal = CONSTANTS.INTENSITY_MAP[state.config.intensity];
-
-            let html = '';
-            days.forEach((day, idx) => {
-                const isToday = idx === todayIdx ? 'active' : '';
-                html += `
-                    <div class="day-card ${isToday}">
-                        <div class="day-name">${day}</div>
-                        <div class="day-load">${intensityVal} 🎯</div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        // =========================================================
-        // 6. AÇÕES & NAVEGAÇÃO
-        // =========================================================
-        function goToLink(url, id) {
-            completeMission(id);
-            setTimeout(() => window.location.href = url, 500);
-        }
-
-        function goToSimulado(type, id) {
-            completeMission(id);
-            localStorage.setItem('simulado_auto_start', type);
-            setTimeout(() => window.location.href = 'simulados.html', 500);
-        }
-
-        function completeMission(id) {
+        function completeMission(id, xp) {
             if (!state.history[todayDate]) state.history[todayDate] = [];
             
             if (!state.history[todayDate].includes(id)) {
                 state.history[todayDate].push(id);
-                state.user.xp += 150; // XP por missão
+                state.user.xp += xp;
                 saveState();
-                
-                // Efeito Confete 🎉
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+                renderMissionsUI();
+                if(id.includes('bonus')) confetti();
+            } else {
+                // Se já fez, pode navegar (simulação)
+                // window.location.href = ...
             }
         }
+
+        function updateGamificationUI() {
+            const xp = state.user.xp;
+            const level = Math.floor(xp / 1000) + 1;
+            document.getElementById('userLevel').innerText = level;
+            document.getElementById('lvlNum').innerText = level;
+            document.getElementById('xpDisplay').innerText = `${xp % 1000} / 1000 XP`;
+            document.getElementById('xpBar').style.width = `${(xp % 1000)/10}%`;
+            document.getElementById('streakDay').innerText = state.user.streak;
+        }
+
+        // =========================================================
+        // 4. HISTÓRICO & ESTATÍSTICAS (Heatmap Engine)
+        // =========================================================
+        function openStats() {
+            document.getElementById('statsModal').style.display = 'flex';
+            renderHeatmap();
+            calculateBigStats();
+        }
+
+        function closeStats() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+
+        function calculateBigStats() {
+            // 1. Total Missões
+            let totalMissions = 0;
+            let totalDays = 0;
+            
+            Object.values(state.history).forEach(dayList => {
+                if (dayList.length > 0) {
+                    totalMissions += dayList.length;
+                    totalDays++;
+                }
+            });
+
+            document.getElementById('statTotalMissions').innerText = totalMissions;
+            document.getElementById('statTotalDays').innerText = totalDays;
+            document.getElementById('statMaxStreak').innerText = state.user.streak; // Simplificado
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('heatmap');
+            container.innerHTML = '';
+            
+            // Gera últimos 90 dias (aprox 12 semanas)
+            const today = new Date();
+            const squares = [];
+            
+            // Vamos gerar 84 dias (12 semanas * 7 dias)
+            for (let i = 83; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                
+                const count = state.history[dateStr] ? state.history[dateStr].length : 0;
+                let level = 0;
+                if (count > 0) level = 1;
+                if (count > 2) level = 2;
+                if (count > 4) level = 3;
+
+                const div = document.createElement('div');
+                div.className = 'day-square';
+                div.setAttribute('data-level', level);
+                div.title = `${dateStr}: ${count} missões`;
+                squares.push(div);
+            }
+            
+            squares.forEach(sq => container.appendChild(sq));
+        }
+
+        // =========================================================
+        // 5. INICIALIZAÇÃO
+        // =========================================================
+        // Timer Global (Persistente)
+        let totalSeconds = parseInt(localStorage.getItem('estudaia_timer')) || 0;
+        setInterval(() => {
+            totalSeconds++;
+            localStorage.setItem('estudaia_timer', totalSeconds);
+            const h = Math.floor(totalSeconds/3600).toString().padStart(2,'0');
+            const m = Math.floor((totalSeconds%3600)/60).toString().padStart(2,'0');
+            const timerEl = document.getElementById('globalTimer');
+            if(timerEl) timerEl.innerText = `${h}:${m}`;
+        }, 1000);
 
         function switchView(view) {
-            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             if(view === 'daily') {
-                document.getElementById('viewDaily').classList.add('active');
                 document.getElementById('dailyContainer').style.display = 'block';
                 document.getElementById('weeklyContainer').style.display = 'none';
+                document.getElementById('viewDaily').classList.add('active');
+                document.getElementById('viewWeekly').classList.remove('active');
             } else {
-                document.getElementById('viewWeekly').classList.add('active');
                 document.getElementById('dailyContainer').style.display = 'none';
                 document.getElementById('weeklyContainer').style.display = 'block';
-                renderWeeklyView();
+                document.getElementById('viewDaily').classList.remove('active');
+                document.getElementById('viewWeekly').classList.add('active');
+                
+                // Gera resumo simples semanal
+                const container = document.getElementById('weeklyGrid');
+                container.innerHTML = `
+                    <div class="day-card"><div class="day-name">DOM</div><div class="day-load">-</div></div>
+                    <div class="day-card"><div class="day-name">SEG</div><div class="day-load">3 🎯</div></div>
+                    <div class="day-card"><div class="day-name">TER</div><div class="day-load">3 🎯</div></div>
+                    <div class="day-card"><div class="day-name">QUA</div><div class="day-load">3 🎯</div></div>
+                    <div class="day-card"><div class="day-name">QUI</div><div class="day-load">3 🎯</div></div>
+                    <div class="day-card"><div class="day-name">SEX</div><div class="day-load">3 🎯</div></div>
+                    <div class="day-card"><div class="day-name">SÁB</div><div class="day-load">-</div></div>
+                `;
             }
         }
 
-        // =========================================================
-        // 7. MODAL DE CONFIGURAÇÃO (LÓGICA)
-        // =========================================================
-        let tempSubjects = [];
-        let tempIntensity = 'medio';
-
-        function openConfig() {
-            // Sincroniza estado atual com UI do modal
-            tempSubjects = [...state.config.subjects];
-            tempIntensity = state.config.intensity;
-            
-            updateChipsUI();
-            updateIntensityUI();
-            
-            document.getElementById('configModal').style.display = 'flex';
-        }
-
-        function closeConfig() {
-            document.getElementById('configModal').style.display = 'none';
-        }
-
-        // Fecha ao clicar fora
-        document.getElementById('configModal').addEventListener('click', (e) => {
-            if (e.target.id === 'configModal') closeConfig();
-        });
-
-        function toggleSubject(el) {
-            const val = el.dataset.val;
-            if (tempSubjects.includes(val)) {
-                tempSubjects = tempSubjects.filter(s => s !== val);
-            } else {
-                tempSubjects.push(val);
-            }
-            updateChipsUI();
-        }
-
-        function updateChipsUI() {
-            document.querySelectorAll('.subject-chip').forEach(chip => {
-                if (tempSubjects.includes(chip.dataset.val)) chip.classList.add('selected');
-                else chip.classList.remove('selected');
-            });
-        }
-
-        function setIntensity(val) {
-            tempIntensity = val;
-            updateIntensityUI();
-        }
-
-        function updateIntensityUI() {
-            document.querySelectorAll('.intensity-btn').forEach(btn => {
-                if (btn.dataset.val === tempIntensity) btn.classList.add('active');
-                else btn.classList.remove('active');
-            });
-        }
-
-        function applyPreset(type) {
-            if(type === 'med') tempSubjects = ['nat', 'red', 'nat', 'mat'];
-            if(type === 'eng') tempSubjects = ['mat', 'nat', 'mat', 'red'];
-            if(type === 'dir') tempSubjects = ['hum', 'lin', 'hum', 'red'];
-            updateChipsUI();
-        }
-
-        function saveConfig() {
-            if(tempSubjects.length === 0) return alert("Selecione pelo menos uma matéria!");
-            
-            // Verifica se mudou algo que exige regerar o plano
-            const changed = JSON.stringify(state.config.subjects) !== JSON.stringify(tempSubjects) ||
-                            state.config.intensity !== tempIntensity;
-
-            state.config.subjects = tempSubjects;
-            state.config.intensity = tempIntensity;
-            
-            if(changed) {
-                // Força regeração do plano de hoje
-                state.dailyPlan = { date: null, missions: [] };
-            }
-            
-            saveState();
-            closeConfig();
-            checkAndGenerateDailyMissions();
-        }
-
-        // =========================================================
-        // STARTUP
-        // =========================================================
-        initTimer();
-        
-        // Se nunca configurou, abre modal
-        if (state.config.subjects.length === 0 && !localStorage.getItem('estudaia_onboarded')) {
-            localStorage.setItem('estudaia_onboarded', 'true');
-            openConfig();
-        } else {
-            checkAndGenerateDailyMissions();
-        }
+        checkAndGenerateDailyMissions();
 
     </script>
 </body>
