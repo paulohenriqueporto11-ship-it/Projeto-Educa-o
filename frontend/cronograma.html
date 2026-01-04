@@ -3,11 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cronograma - Estuda.IA</title>
+    <title>Minha Rotina - Estuda.IA</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4F46E5">
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos específicos desta página para Missões */
+        .streak-bar {
+            background: linear-gradient(135deg, #FF9068 0%, #FF4B1F 100%);
+            color: white; padding: 15px 20px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px; box-shadow: 0 4px 15px rgba(255, 75, 31, 0.3);
+        }
+        .streak-count { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        
+        .mission-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px; margin-bottom: 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .mission-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+        
+        .mission-left { display: flex; align-items: center; gap: 15px; }
+        .mission-icon { 
+            width: 50px; height: 50px; background: #EEF2FF; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        }
+        
+        .mission-info h3 { font-size: 1.1rem; margin-bottom: 4px; color: var(--text-main); }
+        .mission-info p { font-size: 0.9rem; color: var(--text-muted); }
+        .xp-badge { 
+            background: #F3F4F6; color: var(--text-muted); padding: 4px 8px; 
+            border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-block; margin-top: 5px;
+        }
+
+        .btn-start {
+            background: var(--primary); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;
+            text-decoration: none; font-size: 0.9rem;
+        }
+        .btn-start:hover { background: var(--primary-hover); }
+
+        .mission-done { opacity: 0.6; background: #F9FAFB; pointer-events: none; }
+        .mission-done .btn-start { background: var(--success); }
+        
+        /* Mobile */
+        @media (max-width: 600px) {
+            .mission-card { flex-direction: column; text-align: center; gap: 15px; }
+            .mission-left { flex-direction: column; }
+            .btn-start { width: 100%; }
+        }
+    </style>
 </head>
 <body>
 
@@ -18,173 +66,125 @@
 
     <div class="container">
         
-        <div class="progress-header">
-            <div class="progress-info">
-                <h2>Jornada da Aprovação</h2>
-                <p>Clique nos tópicos para assistir às aulas e marcar como concluído.</p>
+        <div class="streak-bar">
+            <div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">Ofensiva de Estudos</div>
+                <div class="streak-count">🔥 <span id="streakDay">1</span> dias seguidos</div>
             </div>
-            
-            <div class="circle-chart">
-                <svg viewBox="0 0 36 36" class="circular-chart">
-                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    <path class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#4F46E5" id="circlePath" />
-                    <text x="18" y="20.35" class="percentage" id="percentText">0%</text>
-                </svg>
+            <div style="text-align: right;">
+                <div style="font-size: 0.9rem; opacity: 0.9;">XP Total</div>
+                <div style="font-weight: 800; font-size: 1.2rem;" id="totalXp">0 XP</div>
             </div>
         </div>
 
-        <div id="modulesContainer"></div>
+        <h2 style="margin-bottom: 20px;">Missões de Hoje</h2>
+        
+        <div id="missionsList"></div>
 
     </div>
 
     <script>
-        // --- CURADORIA DE CONTEÚDO (Vídeos Reais do Youtube) ---
-        const studyData = [
+        // --- CONFIGURAÇÃO DAS MISSÕES ---
+        // Aqui definimos o que o aluno tem que fazer DENTRO do site
+        const dailyMissions = [
             {
-                id: 1,
-                title: "Módulo 1: Estrutura da Redação",
-                tasks: [
-                    { 
-                        title: "Modelo de Redação Nota 1000", 
-                        video: "yvl3KjdV2ZM", // ID do Youtube
-                        desc: "Entenda a estrutura básica: Introdução, Desenvolvimento e Conclusão. Veja como planejar o texto antes de escrever."
-                    },
-                    { 
-                        title: "Como fazer uma Introdução Perfeita", 
-                        video: "7J0V0X6Z8ws", 
-                        desc: "Aprenda a apresentar o tema, fazer a contextualização histórica e definir sua tese logo no primeiro parágrafo."
-                    }
-                ]
+                id: 'redacao_1',
+                title: "Treino de Escrita",
+                desc: "Escreva uma redação sobre 'Saúde Mental'.",
+                icon: "📝",
+                xp: 150,
+                link: "redacao.html", // Link Interno
+                action: "Escrever Agora"
             },
             {
-                id: 2,
-                title: "Módulo 2: Gramática Essencial (C1)",
-                tasks: [
-                    { 
-                        title: "Crase sem mistério", 
-                        video: "3f3_2X2_1qM", 
-                        desc: "Nunca mais erre a crase. Regras práticas de quando usar, quando não usar e casos facultativos."
-                    },
-                    { 
-                        title: "Uso da Vírgula", 
-                        video: "g_5z5z5z5z5", // Placeholder
-                        desc: "A vírgula muda o sentido da frase. Aprenda a separar orações e isolar termos explicativos."
-                    }
-                ]
+                id: 'simulado_hum',
+                title: "Desafio de Humanas",
+                desc: "Acerte pelo menos 3 questões no Simulado.",
+                icon: "🏛️",
+                xp: 100,
+                link: "simulados.html", // Link Interno
+                action: "Ir para Quiz"
             },
             {
-                id: 3,
-                title: "Módulo 3: Argumentação (C3)",
-                tasks: [
-                    { 
-                        title: "Como usar Repertório Sociocultural", 
-                        video: "example123", 
-                        desc: "Citações coringas de filósofos, filmes e livros que servem para vários temas."
-                    },
-                    { 
-                        title: "Projeto de Texto", 
-                        video: "example456", 
-                        desc: "Como organizar seus argumentos para não se perder e garantir a progressão textual."
-                    }
-                ]
+                id: 'simulado_mat',
+                title: "Treino Rápido de Lógica",
+                desc: "Complete um simulado de Matemática.",
+                icon: "📐",
+                xp: 100,
+                link: "simulados.html", // Link Interno
+                action: "Calcular"
             }
         ];
 
-        // --- LÓGICA ---
-        const savedProgress = JSON.parse(localStorage.getItem('estudaia_progress')) || {};
+        // --- LÓGICA DE ESTADO ---
+        let userState = JSON.parse(localStorage.getItem('estudaia_state')) || {
+            xp: 0,
+            streak: 1,
+            lastLogin: new Date().toDateString(),
+            completedMissions: [] // Lista de IDs completados hoje
+        };
 
-        function renderModules() {
-            const container = document.getElementById('modulesContainer');
-            let totalTasks = 0, completedTasks = 0;
+        // Verifica Streak (Lógica simples de dia)
+        const today = new Date().toDateString();
+        if (userState.lastLogin !== today) {
+            // Se entrou em dias diferentes, reseta missões
+            userState.completedMissions = []; 
+            // (Aqui poderia ter lógica real de streak +1 se fosse ontem)
+            userState.lastLogin = today;
+            localStorage.setItem('estudaia_state', JSON.stringify(userState));
+        }
+
+        function renderMissions() {
+            const container = document.getElementById('missionsList');
+            document.getElementById('totalXp').innerText = userState.xp + ' XP';
+            document.getElementById('streakDay').innerText = userState.streak;
+
             let html = '';
 
-            studyData.forEach(mod => {
-                let tasksHtml = '';
-                mod.tasks.forEach((task, index) => {
-                    const taskId = `${mod.id}_${index}`;
-                    const isChecked = savedProgress[taskId] ? 'checked' : '';
-                    if(isChecked) completedTasks++;
-                    totalTasks++;
-
-                    // Item da Lista com Conteúdo Expansível
-                    tasksHtml += `
-                        <div class="task-item-wrapper" id="row_${taskId}">
-                            <div class="task-item">
-                                <input type="checkbox" class="custom-checkbox" id="${taskId}" ${isChecked} onchange="toggleTask('${taskId}')">
-                                <span class="task-label" onclick="toggleLesson('${taskId}')">${task.title}</span>
-                                <button class="btn-expand" onclick="toggleLesson('${taskId}')">▼</button>
-                            </div>
-                            
-                            <div class="lesson-content" id="lesson_${taskId}">
-                                <div class="video-responsive">
-                                    <iframe src="https://www.youtube.com/embed/${task.video}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                                </div>
-                                <div class="lesson-summary">
-                                    <h4>Resumo da Aula</h4>
-                                    <p>${task.desc}</p>
-                                    <button class="btn btn-outline" style="font-size:0.8rem; padding: 5px 10px;" onclick="toggleTask('${taskId}', true)">Marcar como Concluído</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-
+            dailyMissions.forEach(mission => {
+                const isDone = userState.completedMissions.includes(mission.id);
+                
                 html += `
-                    <div class="module-card">
-                        <div class="module-header">
-                            <span class="module-title">${mod.title}</span>
-                            <span class="module-badge">${mod.tasks.length} Aulas</span>
+                    <div class="mission-card ${isDone ? 'mission-done' : ''}">
+                        <div class="mission-left">
+                            <div class="mission-icon">${mission.icon}</div>
+                            <div class="mission-info">
+                                <h3>${mission.title}</h3>
+                                <p>${mission.desc}</p>
+                                <span class="xp-badge">+${mission.xp} XP</span>
+                            </div>
                         </div>
-                        <div class="task-list">${tasksHtml}</div>
+                        <button class="btn-start" onclick="startMission('${mission.link}', '${mission.id}', ${mission.xp})">
+                            ${isDone ? 'Concluído ✅' : mission.action + ' →'}
+                        </button>
                     </div>
                 `;
             });
 
             container.innerHTML = html;
-            updateChart(completedTasks, totalTasks);
         }
 
-        // Abre/Fecha o conteúdo da aula
-        function toggleLesson(id) {
-            const content = document.getElementById(`lesson_${id}`);
-            const isVisible = content.classList.contains('active');
+        function startMission(link, id, xp) {
+            // Aqui simulamos que ele "pegou" a missão.
+            // O ideal seria validar se ele fez mesmo, mas para MVP,
+            // ao clicar, marcamos como "em progresso" ou levamos pra lá.
             
-            // Fecha todos
-            document.querySelectorAll('.lesson-content').forEach(el => el.classList.remove('active'));
+            // Vamos levar o usuário para a página
+            window.location.href = link;
             
-            // Abre o clicado se não estava aberto
-            if(!isVisible) content.classList.add('active');
+            // Nota: Num app real, a página de Redação teria que salvar que a missão foi feita.
+            // Como ainda não temos backend complexo pra isso, vamos fazer um "hack":
+            // Salvamos no localStorage que ele CLICOU para fazer.
+            // Quando ele voltar, podemos perguntar "Você terminou?" ou marcar automaticamente.
+            
+            /* Para simplificar a experiência agora:
+               Vamos apenas redirecionar. O aluno faz a redação.
+               A lógica de "Check" automático exige conectar o redacaoController
+               com esse sistema de missões. Por enquanto, é um guia de navegação.
+            */
         }
 
-        function toggleTask(id, forceCheck = false) {
-            const checkbox = document.getElementById(id);
-            if(forceCheck) checkbox.checked = true;
-
-            if (checkbox.checked) {
-                savedProgress[id] = true;
-            } else {
-                delete savedProgress[id];
-            }
-            
-            localStorage.setItem('estudaia_progress', JSON.stringify(savedProgress));
-            
-            // Atualiza gráfico
-            let total = document.querySelectorAll('.custom-checkbox').length;
-            let checked = document.querySelectorAll('.custom-checkbox:checked').length;
-            updateChart(checked, total);
-        }
-
-        function updateChart(completed, total) {
-            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-            const circle = document.getElementById('circlePath');
-            const text = document.getElementById('percentText');
-            
-            circle.setAttribute('stroke-dasharray', `${percent}, 100`);
-            text.textContent = `${percent}%`;
-            circle.setAttribute('stroke', percent === 100 ? '#10B981' : '#4F46E5');
-        }
-
-        renderModules();
+        renderMissions();
     </script>
 </body>
 </html>
