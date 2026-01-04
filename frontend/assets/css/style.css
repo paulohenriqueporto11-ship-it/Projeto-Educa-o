@@ -780,3 +780,75 @@ input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; 
     /* Ajuste dos Big Numbers no Mobile */
     .big-stats-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   17. CORREÇÃO DESKTOP VS MOBILE & LAYOUT EXPANDIDO
+   ========================================================================== */
+
+/* No Mobile, mantemos o layout de coluna única (padrão do código anterior) */
+/* No Desktop (telas acima de 1024px), mudamos tudo: */
+
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1200px; /* Tela larga */
+        display: grid;
+        grid-template-columns: 380px 1fr; /* Coluna do Timer (Esq) e Missões (Dir) */
+        gap: 40px;
+        align-items: start;
+    }
+
+    /* O Timer vira um painel fixo de comando */
+    .timer-deck {
+        position: sticky;
+        top: 100px;
+        height: auto;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .timer-ring {
+        width: 220px; /* Bem maior no PC */
+        height: 220px;
+    }
+    .timer-inner {
+        width: 200px;
+        height: 200px;
+    }
+    .timer-display {
+        font-size: 3.5rem; /* Números grandes */
+    }
+
+    /* Lista de Missões em Grid no PC */
+    #missionsList {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Duas colunas de missões */
+        gap: 20px;
+    }
+}
+
+/* Correção visual dos botões de áudio */
+.sound-btn.playing {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+    box-shadow: 0 0 10px var(--success);
+    animation: pulseAudio 1.5s infinite;
+}
+
+@keyframes pulseAudio {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Botão de Personalizar no Modal */
+.custom-track-input {
+    display: none;
+    margin-top: 15px;
+    padding: 10px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px dashed var(--primary);
+}
