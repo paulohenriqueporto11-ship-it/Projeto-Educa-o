@@ -11,22 +11,24 @@ const CONFIG = {
             LEVE: 20,
             MEDIA: 40,
             GRAVE: 60,
-            FATAL: 120,
+            FATAL: 120, // Zera competência drasticamente
             REPETICAO: 20,
             FRASE_LONGA: 10
         },
         BONUS: {
             VOCABULARIO: 20,
+            DETALHAMENTO_C5: 40,
             ELEMENTO_C5: 40
         }
     },
     LIMITES: {
         MIN_PALAVRAS: 50,
         MIN_VOCABULARIO_UNICO: 0.35,
-        FRASE_LONGA_QTD: 55,
-        MAX_REPETICAO_CONECTIVO: 3,
+        FRASE_LONGA_QTD: 60, // Aumentei um pouco a tolerância
+        MAX_REPETICAO_CONECTIVO: 4,
         MIN_PARAGRAFOS: 3,
-        TAMANHO_DETALHAMENTO: 150
+        // Limite dinâmico será calculado no código
+        TAMANHO_DETALHAMENTO: 100
     }
 };
 
@@ -34,22 +36,27 @@ const CONFIG = {
 // 📚 LÉXICO & DADOS
 // =================================================================
 const LEXICO = {
-    // Listas Simples (Palavras Únicas) -> Serão convertidas em SETs para O(1)
+    // Listas Simples (Palavras Únicas)
     ORALIDADE: ['vc', 'pq', 'tb', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'coisa', 'negócio', 'tipo', 'aí', 'então', 'daí', 'né', 'ta', 'tá', 'blz', 'so'],
-    VOCABULARIO_RICO: ['imprescindível', 'intrínseco', 'corroborar', 'paradigma', 'utopia', 'efêmero', 'mitigar', 'exacerbar', 'viés', 'conjuntura', 'preponderante', 'inexorável', 'fomento', 'alicerce', 'consoante', 'premissa', 'análogo', 'dissonância', 'inerente'],
-    MARCAS_OPINIAO: ['fundamental', 'imprescindível', 'urgente', 'notório', 'grave', 'deve-se', 'precisa-se', 'defende-se', 'acredita-se', 'observa-se', 'inaceitável', 'crucial', 'lastimável', 'preocupante'],
-    CONECTIVOS_TRANSICAO: ['portanto', 'entretanto', 'contudo', 'todavia', 'além', 'visto', 'dessa', 'suma', 'consequentemente', 'nesse', 'sob', 'diante', 'outrossim', 'adicionando', 'contrapartida', 'assim', 'logo', 'primeiramente', 'ademais', 'fim'],
+    VOCABULARIO_RICO: ['imprescindível', 'intrínseco', 'corroborar', 'paradigma', 'utopia', 'efêmero', 'mitigar', 'exacerbar', 'viés', 'conjuntura', 'preponderante', 'inexorável', 'fomento', 'alicerce', 'consoante', 'premissa', 'análogo', 'dissonância', 'inerente', 'fundamental', 'crucial', 'consolidar', 'assegurar'],
+    MARCAS_OPINIAO: ['fundamental', 'imprescindível', 'urgente', 'notório', 'grave', 'deve-se', 'precisa-se', 'defende-se', 'acredita-se', 'observa-se', 'inaceitável', 'crucial', 'lastimável', 'preocupante', 'indispensável', 'necessário'],
     
-    // Listas Complexas (Frases/Regex) -> Serão pré-compiladas
+    // Coesão (Lista Expandida com Frases de Transição)
+    CONECTIVOS_TRANSICAO: [
+        'portanto', 'entretanto', 'contudo', 'todavia', 'além', 'visto', 'dessa forma', 'em suma', 'consequentemente', 'nesse sentido', 'sob esse viés', 'diante disso', 'outrossim', 'adicionando', 'em contrapartida', 'assim', 'logo', 'primeiramente', 'ademais', 'por fim', 'em síntese', 'dessa maneira', 'outro fator', 'vale ressaltar', 'historicamente', 'consequentemente', 'no brasil'
+    ],
+    CONECTIVOS_CONCLUSAO_FORTE: ['portanto', 'em suma', 'concluindo', 'em síntese', 'dessa forma', 'assim', 'logo'],
+    
+    // Listas Complexas (Frases/Regex)
     CLICHES: ['hoje em dia', 'nos dias de hoje', 'desde os primórdios', 'a cada dia que passa', 'com certeza', 'no mundo atual', 'atualmente', 'desde sempre'],
-    REPERTORIO: ['segundo', 'de acordo', 'conforme', 'ibge', 'oms', 'onu', 'constituição', 'lei', 'artigo', 'filósofo', 'sociólogo', 'pensador', 'obra', 'livro', 'filme', 'série', 'documentário', 'dados', 'estatística', 'pesquisa', 'estudo', 'universidade', 'ciência', 'história', 'guerra', 'revolução', 'cenário', 'panorama', 'literatura'],
+    REPERTORIO: ['segundo', 'de acordo', 'conforme', 'ibge', 'oms', 'onu', 'constituição', 'lei', 'artigo', 'filósofo', 'sociólogo', 'pensador', 'obra', 'livro', 'filme', 'série', 'documentário', 'dados', 'estatística', 'pesquisa', 'estudo', 'universidade', 'ciência', 'história', 'guerra', 'revolução', 'cenário', 'panorama', 'literatura', 'notícia'],
     
-    // Estruturas C5
+    // Intervenção
     C5_ELEMENTOS: [
-        { chave: 'AGENTE', msg: 'Faltou AGENTE (Quem?)', termos: ['governo', 'estado', 'ministério', 'escola', 'mídia', 'sociedade', 'família', 'ongs', 'poder público', 'legislativo', 'executivo', 'cabe ao', 'cabe à', 'indivíduo', 'cidadão'] },
-        { chave: 'ACAO', msg: 'Faltou AÇÃO (O quê?)', termos: ['deve', 'precisa', 'necessita', 'cabe a', 'promover', 'criar', 'fiscalizar', 'investir', 'implementar', 'fomentar', 'realizar', 'garantir', 'desenvolver', 'elaborar', 'instituir', 'viabilizar'] },
-        { chave: 'MEIO', msg: 'Faltou MEIO/MODO (Como?)', termos: ['por meio', 'através', 'mediante', 'intermédio', 'uso de', 'via', 'auxílio', 'partir de'] },
-        { chave: 'FINALIDADE', msg: 'Faltou FINALIDADE (Para quê?)', termos: ['a fim', 'intuito', 'para que', 'visando', 'fito', 'objetivando', 'sentido de', 'mitigar', 'resolver', 'propósito'] }
+        { chave: 'AGENTE', msg: 'Faltou AGENTE (Quem?)', termos: ['governo', 'estado', 'ministério', 'escola', 'mídia', 'sociedade', 'família', 'ongs', 'poder público', 'legislativo', 'executivo', 'cabe ao', 'cabe à', 'indivíduo', 'cidadão', 'iniciativa', 'parcerias', 'instituições'] },
+        { chave: 'ACAO', msg: 'Faltou AÇÃO (O quê?)', termos: ['deve', 'precisa', 'necessita', 'cabe a', 'promover', 'criar', 'fiscalizar', 'investir', 'implementar', 'fomentar', 'realizar', 'garantir', 'desenvolver', 'elaborar', 'instituir', 'viabilizar', 'atuar', 'assegurar'] },
+        { chave: 'MEIO', msg: 'Faltou MEIO/MODO (Como?)', termos: ['por meio', 'através', 'mediante', 'intermédio', 'uso de', 'via', 'auxílio', 'partir de', 'utilização de', 'aliada à'] },
+        { chave: 'FINALIDADE', msg: 'Faltou FINALIDADE (Para quê?)', termos: ['a fim', 'intuito', 'para que', 'visando', 'fito', 'objetivando', 'sentido de', 'mitigar', 'resolver', 'propósito', 'possibilita que', 'permitindo que', 'capaz de'] }
     ],
     C5_GENERICOS: ['conscientizar', 'palestra']
 };
@@ -57,7 +64,6 @@ const LEXICO = {
 // =================================================================
 // ⚡ CACHE DE PERFORMANCE (PRÉ-COMPILAÇÃO)
 // =================================================================
-// Executado apenas UMA vez quando o servidor inicia.
 const CACHE = {
     SETS: {
         ORALIDADE: new Set(LEXICO.ORALIDADE),
@@ -66,10 +72,8 @@ const CACHE = {
         CONECTIVOS: new Set(LEXICO.CONECTIVOS_TRANSICAO)
     },
     REGEX: {
-        // Cria um regex gigante OR (termo1|termo2|...) para checagem rápida de frases
         CLICHES: new RegExp(`\\b(${LEXICO.CLICHES.join('|')})\\b`, 'gi'),
         REPERTORIO: new RegExp(`\\b(${LEXICO.REPERTORIO.join('|')})\\b`, 'gi'),
-        // Gramática
         PONTUACAO_ESPACO_ANTES: /\s+[.,;]/,
         PONTUACAO_FALTA_ESPACO: /[.,;][a-zA-Z]/,
         PONTO_SOLTO: /[a-z] \.[A-Z]/,
@@ -84,11 +88,12 @@ const CACHE = {
 };
 
 // =================================================================
-// 🛠️ HELPERS OTIMIZADOS
+// 🛠️ HELPERS
 // =================================================================
 
 function normalizar(txt) {
-    return txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    // Normaliza, remove acentos e caracteres estranhos de formatação invisíveis
+    return txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\r/g, "").trim();
 }
 
 function clamp(val) {
@@ -97,7 +102,6 @@ function clamp(val) {
 
 function penalizar(comp, pontos, tipo, descricao, exemplo, acao) {
     comp.nota = clamp(comp.nota - pontos);
-    // Verificação de unicidade otimizada
     if (!comp.erros.some(e => e.descricao === descricao)) {
         comp.erros.push({ tipo, descricao, exemplo, acao });
     }
@@ -107,35 +111,23 @@ function bonificar(comp, pontos) {
     comp.nota = clamp(comp.nota + pontos);
 }
 
-// Tokenizador Robusto (Gera array de palavras limpas)
 function tokenizar(texto) {
     return normalizar(texto).match(/\b[\wÀ-ÿ]+\b/g) || [];
 }
 
-// Checagem de frases exatas usando Regex Pré-Compilado
-function contemFrase(texto, regex) {
-    return regex.test(texto);
-}
-
-// Checagem de palavras soltas usando SET (O(1))
 function contemPalavra(tokens, setAlvo) {
     return tokens.some(t => setAlvo.has(t));
 }
 
-// Contador de frequencia usando MAP (Passagem única)
-function analisarFrequencia(tokens, setAlvo) {
-    const mapa = new Map();
-    tokens.forEach(t => {
-        if (setAlvo.has(t)) {
-            mapa.set(t, (mapa.get(t) || 0) + 1);
-        }
+function detectarRepeticaoFrases(frases) {
+    const setFrases = new Set();
+    return frases.some(f => {
+        if (f.length < 20) return false;
+        const fNorm = normalizar(f).replace(/\s+/g, ' ');
+        if (setFrases.has(fNorm)) return true;
+        setFrases.add(fNorm);
+        return false;
     });
-    return mapa;
-}
-
-// Hash de frase para detecção de loop (ignora pontuação e espaços)
-function hashFrase(frase) {
-    return normalizar(frase).replace(/[^\w]/g, '');
 }
 
 // =================================================================
@@ -143,86 +135,88 @@ function hashFrase(frase) {
 // =================================================================
 
 function analisarC1(texto, textoLower, tokens, frases, resC1) {
-    // 1. Oralidade (Uso de SET - O(1) por token)
+    // 1. Oralidade
     const oralidadesEncontradas = tokens.filter(t => CACHE.SETS.ORALIDADE.has(t));
     if (oralidadesEncontradas.length > 0) {
         const exemplo = [...new Set(oralidadesEncontradas)].slice(0, 3).join(', ');
-        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.LEVE, "Oralidade", "Termos informais.", `Ex: ${exemplo}`, "Use linguagem culta.");
+        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.LEVE, "Oralidade", "Termos informais.", `Ex: ${exemplo}`, "Substitua por linguagem formal.");
     }
 
-    // 2. Pontuação e Gramática (Regex Pré-compilados)
+    // 2. Pontuação e Gramática
     const check = (regex, pontos, tipo, desc, ex, acao) => {
         if (regex.test(texto)) penalizar(resC1, pontos, tipo, desc, ex, acao);
     };
 
     check(CACHE.REGEX.PONTUACAO_ESPACO_ANTES, CONFIG.PONTOS.PENALIDADE.LEVE, "Pontuação", "Espaço antes de sinal.", "Ex: 'Olá ,'", "Remova o espaço.");
     check(CACHE.REGEX.PONTUACAO_FALTA_ESPACO, CONFIG.PONTOS.PENALIDADE.LEVE, "Pontuação", "Falta espaço após sinal.", "Ex: 'Olá,mundo'", "Adicione espaço.");
-    check(CACHE.REGEX.PONTO_SOLTO, CONFIG.PONTOS.PENALIDADE.LEVE, "Pontuação", "Ponto final isolado.", "Ex: 'fim . Começo'", "Una o ponto à palavra.");
     check(CACHE.REGEX.CONCORDANCIA, CONFIG.PONTOS.PENALIDADE.MEDIA, "Concordância", "Erro plural/singular.", "Ex: 'Os problema'", "Ajuste o número.");
     check(CACHE.REGEX.HOUVERAM, CONFIG.PONTOS.PENALIDADE.MEDIA, "Gramática", "Uso de 'Houveram'.", "'Houveram fatos'", "Use 'Houve'.");
     check(CACHE.REGEX.FAZEM_TEMPO, CONFIG.PONTOS.PENALIDADE.MEDIA, "Gramática", "Uso de 'Fazem' (tempo).", "'Fazem anos'", "Use 'Faz anos'.");
     check(CACHE.REGEX.CRASE_ERRO, CONFIG.PONTOS.PENALIDADE.MEDIA, "Crase", "Crase indevida.", "Antes de masculino/verbo.", "Remova a crase.");
     check(CACHE.REGEX.MIM_CONJUGA, CONFIG.PONTOS.PENALIDADE.MEDIA, "Gramática", "'Mim' conjuga verbo.", "'Para mim ir'", "Use 'Para eu ir'.");
-    check(CACHE.REGEX.INICIO_OBLIQUO, CONFIG.PONTOS.PENALIDADE.LEVE, "Colocação", "Início com oblíquo.", "'Me ajuda'", "Use 'Ajude-me'.");
 
-    // 3. Frases Longas
+    // 3. Frases Longas (Tolerância maior para textos bem pontuados)
     let frasesLongas = 0;
     frases.forEach(f => {
-        // Contagem aproximada por espaços é mais rápida que tokenizar cada frase
         if ((f.match(/\s/g) || []).length > CONFIG.LIMITES.FRASE_LONGA_QTD) frasesLongas++;
     });
-    if (frasesLongas > 0) {
-        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.FRASE_LONGA * frasesLongas, "Fluidez", "Frases muito longas.", `${frasesLongas} períodos extensos.`, "Pontue mais.");
+    // Só penaliza se tiver MUITAS frases longas (mais de 2), pois estilo complexo não é erro.
+    if (frasesLongas > 2) {
+        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.FRASE_LONGA * (frasesLongas - 1), "Fluidez", "Períodos muito longos.", `${frasesLongas} frases extensas.`, "Use mais pontos finais.");
     }
 
-    // 4. Bônus Vocabulário (Set O(1))
+    // 4. Bônus Vocabulário
     const ricasCount = tokens.reduce((acc, t) => acc + (CACHE.SETS.VOCABULARIO_RICO.has(t) ? 1 : 0), 0);
-    if (ricasCount >= 2 && resC1.nota < CONFIG.PONTOS.MAX) {
+    if (ricasCount >= 3 && resC1.nota < CONFIG.PONTOS.MAX) {
         bonificar(resC1, CONFIG.PONTOS.BONUS.VOCABULARIO);
     }
 }
 
-function analisarC2(textoLower, tema, paragrafos, resC2) {
+function analisarC2(textoLower, tema, paragrafos, totalPalavras, resC2) {
     // 1. Tema
     if (tema && tema !== "Livre") {
-        const stopWords = new Set(['a', 'o', 'e', 'do', 'da', 'de', 'em', 'para', 'com', 'que', 'um', 'uma', 'os', 'as']);
+        const stopWords = new Set(['a', 'o', 'e', 'do', 'da', 'de', 'em', 'para', 'com', 'que', 'um', 'uma', 'os', 'as', 'no', 'na']);
         const tokensTema = tokenizar(tema).filter(t => t.length > 3 && !stopWords.has(t));
-        
-        // Verifica presença (O(n*m) mas n e m são pequenos aqui)
         const citacoes = tokensTema.reduce((acc, t) => acc + (textoLower.includes(t) ? 1 : 0), 0);
 
         if (citacoes === 0) {
             resC2.nota = 40;
-            penalizar(resC2, 0, "Tema", "Fuga do tema.", `Tema: ${tema}`, "Nenhuma palavra-chave encontrada.");
+            penalizar(resC2, 0, "Tema", "Fuga do tema.", `Tema: ${tema}`, "Cite as palavras-chave do tema.");
         } else if (citacoes < tokensTema.length / 2) {
             penalizar(resC2, CONFIG.PONTOS.PENALIDADE.GRAVE, "Tema", "Tangenciamento.", "Tema incompleto.", "Use todos os termos do tema.");
         }
     }
 
-    // 2. Estrutura
-    if (paragrafos.length < CONFIG.LIMITES.MIN_PARAGRAFOS) {
-        penalizar(resC2, CONFIG.PONTOS.PENALIDADE.FATAL, "Estrutura", "Texto insuficiente.", "Menos de 3 parágrafos.", "Siga a estrutura dissertativa.");
+    // 2. Estrutura (Flexibilizada)
+    const numParagrafos = paragrafos.length;
+    
+    // Tratamento para Monobloco (Usuário colou texto sem quebras)
+    if (numParagrafos === 1 && totalPalavras > 100) {
+        penalizar(resC2, CONFIG.PONTOS.PENALIDADE.GRAVE, "Estrutura Visual", "Texto em Monobloco.", "Apenas 1 parágrafo detectado.", "Pressione ENTER duas vezes para separar os parágrafos.");
+        // Não penaliza mais coisas de estrutura para não zerar injustamente, tenta avaliar o conteúdo
     } else {
-        // Monoblocos
-        for (let i = 1; i < paragrafos.length - 1; i++) {
-            const qtdFrases = (paragrafos[i].match(CACHE.REGEX.FRASES_SPLIT) || []).length;
-            if (qtdFrases < 2) {
-                penalizar(resC2, CONFIG.PONTOS.PENALIDADE.MEDIA, "Estrutura", "Parágrafo Monobloco.", `Parágrafo ${i+1}.`, "Divida em mais frases.");
-            }
+        if (numParagrafos < CONFIG.LIMITES.MIN_PARAGRAFOS) {
+            penalizar(resC2, CONFIG.PONTOS.PENALIDADE.FATAL, "Estrutura", "Texto insuficiente.", "Menos de 3 parágrafos.", "Estruture em Intro, Desenv e Conclusão.");
+        } 
+        // Limite máximo dinâmico: Se texto for longo, aceita mais parágrafos
+        const maxParagrafosAceitaveis = totalPalavras > 400 ? 9 : 6;
+        if (numParagrafos > maxParagrafosAceitaveis) {
+            penalizar(resC2, CONFIG.PONTOS.PENALIDADE.LEVE, "Estrutura", "Fragmentação.", "Muitos parágrafos curtos.", "Tente agrupar ideias.");
         }
-        // Tese (Tokens do 1º paragrafo vs Set de Marcas)
-        const tokensIntro = tokenizar(paragrafos[0]);
+
+        // Tese (Verifica se está na introdução OU no segundo parágrafo)
+        const textoIntro = paragrafos.slice(0, 2).join(" "); // Olha os 2 primeiros
+        const tokensIntro = tokenizar(textoIntro);
         if (!contemPalavra(tokensIntro, CACHE.SETS.MARCAS_OPINIAO)) {
-            penalizar(resC2, CONFIG.PONTOS.PENALIDADE.MEDIA, "Tese", "Sem marca de opinião.", "Intro expositiva.", "Use 'é fundamental', 'é grave'.");
+            penalizar(resC2, CONFIG.PONTOS.PENALIDADE.MEDIA, "Tese", "Sem marca de opinião clara.", "Intro expositiva.", "Use 'é fundamental', 'é grave'.");
         }
     }
 }
 
 function analisarC3(textoLower, resC3) {
-    const explicativos = ['porque', 'pois', 'visto', 'dado', 'haja'];
-    const conclusivos = ['consequentemente', 'logo', 'acarreta', 'gera', 'ocasiona'];
+    const explicativos = ['porque', 'pois', 'visto', 'dado', 'haja', 'virtude', 'medida'];
+    const conclusivos = ['consequentemente', 'logo', 'acarreta', 'gera', 'ocasiona', 'leva', 'promove', 'implica'];
 
-    // Verificação rápida de substrings
     const temExpl = explicativos.some(t => textoLower.includes(t));
     const temConc = conclusivos.some(t => textoLower.includes(t));
 
@@ -232,73 +226,67 @@ function analisarC3(textoLower, resC3) {
     if (!CACHE.REGEX.REPERTORIO.test(textoLower)) {
         penalizar(resC3, CONFIG.PONTOS.PENALIDADE.GRAVE, "Repertório", "Sem repertório.", "Faltou dados/autores.", "Legitime seu argumento.");
     }
-
-    if (CACHE.REGEX.CLICHES.test(textoLower)) {
-        penalizar(resC3, CONFIG.PONTOS.PENALIDADE.LEVE, "Estilo", "Clichê detectado.", "Ex: 'Nos dias de hoje'", "Seja específico.");
-    }
 }
 
 function analisarC4(texto, tokens, paragrafos, resC4) {
-    // Mapa de frequência dos conectivos (Passagem única pelos tokens)
-    const freqMap = analyzeConnectiveFrequency(tokens);
-    const qtdUsados = freqMap.size;
-    let totalConectivos = 0;
+    // 1. Variedade (Usa Map para contagem eficiente)
+    const freqMap = new Map();
+    tokens.forEach(t => {
+        if (CACHE.SETS.CONECTIVOS.has(t)) freqMap.set(t, (freqMap.get(t) || 0) + 1);
+    });
 
+    const qtdUsados = freqMap.size;
     freqMap.forEach((qtd, conectivo) => {
-        totalConectivos += qtd;
         if (qtd > CONFIG.LIMITES.MAX_REPETICAO_CONECTIVO) {
-            penalizar(resC4, CONFIG.PONTOS.PENALIDADE.REPETICAO_CONECTIVO, "Repetição", `Conectivo "${conectivo}" repetido.`, `${qtd} vezes.`, "Varie os conectivos.");
+            penalizar(resC4, CONFIG.PONTOS.PENALIDADE.REPETICAO, "Repetição", `Conectivo "${conectivo}" repetido.`, `${qtd} vezes.`, "Varie os conectivos.");
         }
     });
 
-    if (qtdUsados < 2) penalizar(resC4, 120, "Coesão", "Texto desconexo.", "Poucos conectivos.", "Use conectivos.");
-    else if (qtdUsados < 4) penalizar(resC4, 60, "Coesão", "Baixa variedade.", "Repertório limitado.", "Varie mais.");
+    if (qtdUsados < 2) penalizar(resC4, 80, "Coesão", "Texto desconexo.", "Poucos conectivos.", "Use conectivos.");
+    else if (qtdUsados < 4) penalizar(resC4, 40, "Coesão", "Baixa variedade.", "Repertório limitado.", "Varie mais.");
 
-    // Interparágrafos
+    // 2. Coesão Interparágrafos (Lógica Flexível)
     if (paragrafos.length > 2) {
         let conexoesInter = 0;
-        const checkParagrafos = paragrafos.slice(1);
+        const checkParagrafos = paragrafos.slice(1); // Pula intro
         
         checkParagrafos.forEach((p, idx) => {
-            const tokensInicio = tokenizar(p.split('.')[0]); // Tokens da 1ª frase
-            const temConectivo = tokensInicio.some(t => CACHE.SETS.CONECTIVOS.has(t));
+            // Pega as primeiras 15 palavras, não só a primeira frase
+            // Isso resolve "Historicamente, o brasil..." que não era pego antes
+            const inicioPara = tokenizar(p).slice(0, 15); 
+            
+            const temConectivo = inicioPara.some(t => CACHE.SETS.CONECTIVOS.has(t));
             if (temConectivo) conexoesInter++;
 
-            // Lógica Conclusiva no Desenvolvimento
+            // Checa se usou conclusão no meio
             const ehConclusao = idx === checkParagrafos.length - 1;
-            if (!ehConclusao && tokensInicio.some(t => ['portanto', 'concluindo', 'suma'].includes(t))) {
-                penalizar(resC4, CONFIG.PONTOS.PENALIDADE.MEDIA, "Lógica", "Conclusão no desenvolvimento.", "Início com 'Portanto'.", "Use 'Ademais'.");
+            if (!ehConclusao && inicioPara.some(t => ['portanto', 'concluindo', 'suma'].includes(t))) {
+                // Penalidade menor, as vezes é aceitável encerrar um argumento
+                // penalizar(resC4, 20, "Lógica", "Conclusão no desenvolvimento.", "Evite 'Portanto' no meio.", "Use 'Ademais'.");
             }
         });
 
-        if (conexoesInter === 0) {
-            penalizar(resC4, 60, "Coesão", "Parágrafos soltos.", "Inícios sem conectivos.", "Ligue os parágrafos.");
+        // Se tiver pelo menos 50% dos parágrafos conectados, tá bom.
+        if (conexoesInter < (checkParagrafos.length / 2)) {
+            penalizar(resC4, 40, "Coesão Interparágrafos", "Conexão fraca.", "Inícios sem conectivos.", "Ligue os parágrafos com termos de transição.");
         }
     }
-}
-
-// Helper específico para C4
-function analyzeConnectiveFrequency(tokens) {
-    const map = new Map();
-    tokens.forEach(t => {
-        if (CACHE.SETS.CONECTIVOS.has(t)) {
-            map.set(t, (map.get(t) || 0) + 1);
-        }
-    });
-    return map;
 }
 
 function analisarC5(paragrafos, resC5) {
     resC5.nota = 0;
     if (paragrafos.length > 1) {
-        const conclusao = normalizar(paragrafos[paragrafos.length - 1]);
+        // LÓGICA DE JANELA DESLIZANTE (SMART C5)
+        // Pega os últimos 3 parágrafos (ou todos se tiver menos que 3)
+        // Isso resolve o problema da conclusão dividida
+        const qtdParaCheck = Math.min(paragrafos.length, 3);
+        const textoConclusivo = paragrafos.slice(-qtdParaCheck).join(" ").toLowerCase();
+        
         let elementos = 0;
 
-        // Loop Dinâmico sobre Configuração
         LEXICO.C5_ELEMENTOS.forEach(el => {
-            // Regex local simples é rápido aqui pois 'termos' é pequeno
             const regex = new RegExp(`\\b(${el.termos.join('|')})\\b`, 'i');
-            if (regex.test(conclusao)) {
+            if (regex.test(textoConclusivo)) {
                 elementos++;
             } else {
                 penalizar(resC5, 0, "Intervenção", el.msg, `Faltou: ${el.chave}`, "Complete a proposta.");
@@ -306,16 +294,19 @@ function analisarC5(paragrafos, resC5) {
         });
 
         // Detalhamento
-        const temExplicacao = /\b(pois|visto|ou seja|isto é)\b/.test(conclusao);
-        if (conclusao.length > CONFIG.LIMITES.TAMANHO_DETALHAMENTO && (temExplicacao || elementos >= 4)) {
+        const temExplicacao = /\b(pois|visto|ou seja|isto é|sentido de|capaz de)\b/.test(textoConclusivo);
+        // Se texto conclusivo for grande, assume detalhamento
+        const tamanhoOk = textoConclusivo.length > 200; 
+        
+        if (tamanhoOk && (temExplicacao || elementos >= 4)) {
             elementos++;
         } else if (elementos >= 3) {
             penalizar(resC5, 0, "Intervenção", "Faltou DETALHAMENTO.", "Proposta curta.", "Explique melhor.");
         }
 
         // Genéricos
-        if (/\b(conscientizar|palestra)\b/.test(conclusao)) {
-            penalizar(resC5, 0, "Qualidade", "Intervenção Genérica.", "Evite 'conscientizar'.", "Ação concreta.");
+        if (/\b(conscientizar|palestra)\b/.test(textoConclusivo)) {
+            penalizar(resC5, 0, "Qualidade", "Intervenção Genérica.", "Evite 'conscientizar'.", "Proponha ações concretas.");
             resC5.nota = Math.min(elementos * CONFIG.PONTOS.BONUS.ELEMENTO_C5, 120);
         } else {
             resC5.nota = clamp(elementos * CONFIG.PONTOS.BONUS.ELEMENTO_C5);
@@ -326,7 +317,7 @@ function analisarC5(paragrafos, resC5) {
 }
 
 // =================================================================
-// 🚀 ENGINE PRINCIPAL
+// 🚀 MAIN ENGINE
 // =================================================================
 
 function corrigirRedacao(texto, tema) {
@@ -348,36 +339,28 @@ function corrigirRedacao(texto, tema) {
         return resultado;
     }
 
-    // ⚡ PROCESSAMENTO ÚNICO (PIPELINE)
+    // Pipeline
     const textoLower = textoLimpo.toLowerCase();
+    // Separa parágrafos (aceita \n único ou múltiplo)
     const paragrafos = textoLimpo.split(/\n+/).filter(p => p.trim().length > 0);
     const frases = textoLimpo.split(CACHE.REGEX.FRASES_SPLIT).filter(f => f.trim().length > 0);
-    const tokens = tokenizar(textoLimpo); // Array de palavras limpas
+    const tokens = tokenizar(textoLimpo); 
+    const totalPalavras = tokens.length;
 
-    // --- SEGURANÇA ---
+    // Segurança
     const uniqueTokens = new Set(tokens);
-    if ((uniqueTokens.size / tokens.length) < CONFIG.LIMITES.MIN_VOCABULARIO_UNICO) {
+    if ((uniqueTokens.size / totalPalavras) < CONFIG.LIMITES.MIN_VOCABULARIO_UNICO) {
         resultado.analiseGeral.push("🚨 SPAM: Repetição excessiva.");
         return resultado;
     }
-    
-    // Anti-Loop com Hash
-    const hashesFrases = new Set();
-    const temLoop = frases.some(f => {
-        if (f.length < 20) return false;
-        const hash = hashFrase(f);
-        if (hashesFrases.has(hash)) return true;
-        hashesFrases.add(hash);
-        return false;
-    });
-    if (temLoop) {
+    if (detectarRepeticaoFrases(frases)) {
         resultado.analiseGeral.push("🚨 SPAM: Loop de frases.");
         return resultado;
     }
 
-    // --- EXECUÇÃO ---
+    // Execução
     analisarC1(textoLimpo, textoLower, tokens, frases, resultado.competencias.c1);
-    analisarC2(textoLower, tema, paragrafos, resultado.competencias.c2);
+    analisarC2(textoLower, tema, paragrafos, totalPalavras, resultado.competencias.c2);
     analisarC3(textoLower, resultado.competencias.c3);
     analisarC4(textoLimpo, tokens, paragrafos, resultado.competencias.c4);
     analisarC5(paragrafos, resultado.competencias.c5);
@@ -386,10 +369,6 @@ function corrigirRedacao(texto, tema) {
     resultado.notaFinal = Object.values(resultado.competencias).reduce((acc, c) => acc + c.nota, 0);
 
     return resultado;
-}
-
-function hashFrase(frase) {
-    return normalizar(frase).replace(/[^\w]/g, '');
 }
 
 module.exports = { corrigirRedacao };
