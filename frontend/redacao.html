@@ -9,36 +9,56 @@
     <meta name="theme-color" content="#4F46E5">
 
     <link href="assets/css/style.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="editor-layout">
 
+    <div class="loading-overlay" id="loader">
+        <div class="loader"></div>
+        <div class="loading-text" id="loadingText">Iniciando análise...</div>
+    </div>
+
     <div class="editor-box" id="editorArea">
         <div class="editor-header">
-            <a href="index.html" style="font-weight:600; color:var(--primary)">← Voltar</a>
+            <a href="index.html" class="btn-outline" style="border:none; padding:8px 16px; display:flex; align-items:center; gap:5px;">
+                <span>←</span> Voltar
+            </a>
             <div class="timer-badge" id="timer">01:00:00</div>
         </div>
 
-        <h3 style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase;">Tema da Redação</h3>
-        <div id="temaDisplay" style="font-weight:700; font-size:1.1rem; margin-bottom:20px;">...</div>
+        <h3 style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:10px;">TEMA DA REDAÇÃO</h3>
+        <div id="temaDisplay" style="font-weight:700; font-size:1.3rem; margin-bottom:25px; line-height:1.4; color:var(--text-main);">...</div>
 
-        <textarea id="texto" class="main-input" placeholder="Digite sua redação aqui..."></textarea>
-        <div class="counters"><span id="words">0</span> palavras</div>
-
-        <button class="btn" style="width:100%" onclick="enviar()" id="btnEnviar">ENTREGAR REDAÇÃO</button>
+        <textarea id="texto" class="main-input" placeholder="Comece sua redação aqui. Use parágrafos bem definidos..."></textarea>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+            <div class="counters"><span id="words">0</span> palavras</div>
+            <button class="btn" style="padding: 14px 40px; font-size:1.1rem;" onclick="enviar()" id="btnEnviar">ENTREGAR REDAÇÃO</button>
+        </div>
     </div>
 
     <div id="results" class="results-container">
-        <div class="score-hero">
-            <div class="val" id="finalScore">0</div>
-            <div class="label">NOTA FINAL</div>
+        
+        <h2 style="margin-bottom:30px; text-align:center; font-size:2rem; font-weight:800;">Análise Detalhada</h2>
+
+        <div class="grid-results">
+            <div class="score-hero">
+                <div class="val" id="finalScore">0</div>
+                <div class="label">NOTA TOTAL</div>
+            </div>
+            
+            <div class="chart-box">
+                <canvas id="scoreChart"></canvas>
+            </div>
         </div>
 
         <div id="compList"></div>
 
-        <div style="margin-top: 30px; display: flex; gap: 10px;">
-            <button class="btn btn-outline" style="flex:1" onclick="location.reload()">Nova Redação</button>
-            <a href="index.html" class="btn" style="flex:1">Voltar ao Menu</a>
+        <div style="margin-top: 40px; display: flex; gap: 15px; justify-content:center;">
+            <button class="btn btn-outline" onclick="location.reload()">Escrever Outra</button>
+            <a href="index.html" class="btn">Voltar ao Painel</a>
         </div>
     </div>
 
@@ -49,25 +69,47 @@
         document.getElementById('temaDisplay').innerText = tema;
         const txtArea = document.getElementById('texto');
         
+        // Contador
         txtArea.addEventListener('input', () => {
             const w = txtArea.value.trim() === '' ? 0 : txtArea.value.trim().split(/\s+/).length;
             document.getElementById('words').innerText = w;
         });
 
+        // Timer
         let t = 3600;
-        setInterval(() => {
+        const timerInterval = setInterval(() => {
             t--; if(t<0) return;
             const m = Math.floor(t/60);
             const s = t%60;
             document.getElementById('timer').innerText = `${Math.floor(m/60)}:${(m%60).toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
         }, 1000);
 
+        // Steps do Loading
+        const loadingSteps = [
+            "Lendo seu texto...",
+            "Analisando estrutura e coesão...",
+            "Verificando gramática e sintaxe...",
+            "Avaliando proposta de intervenção...",
+            "Calculando nota final..."
+        ];
+
         async function enviar() {
             const texto = txtArea.value;
-            if(texto.length < 50) return alert("Texto muito curto!");
+            if(texto.length < 50) return alert("Texto muito curto! Escreva pelo menos 50 palavras.");
             
-            const btn = document.getElementById('btnEnviar');
-            btn.disabled = true; btn.innerText = "Corrigindo...";
+            // Ativa Loader
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loadingText');
+            loader.style.display = 'flex';
+            
+            // Animação de texto
+            let stepIndex = 0;
+            const stepTimer = setInterval(() => {
+                if(stepIndex < loadingSteps.length) {
+                    loaderText.innerText = loadingSteps[stepIndex];
+                    stepIndex++;
+                }
+            }, 800);
 
             let userId = localStorage.getItem('estudaia_id');
             if(!userId) { userId = 'anon_' + Date.now(); localStorage.setItem('estudaia_id', userId); }
@@ -80,17 +122,21 @@
                 });
                 const data = await res.json();
                 
+                clearInterval(stepTimer);
+                loader.style.display = 'none';
+
                 if(data.sucesso) {
+                    clearInterval(timerInterval);
                     mostrarResultado(data.resultado);
                     document.getElementById('editorArea').style.display = 'none';
                     document.getElementById('results').style.display = 'block';
                 } else {
                     alert(data.erro);
-                    btn.disabled = false; btn.innerText = "ENTREGAR REDAÇÃO";
                 }
             } catch(e) {
-                alert("Erro de conexão.");
-                btn.disabled = false; btn.innerText = "ENTREGAR REDAÇÃO";
+                clearInterval(stepTimer);
+                loader.style.display = 'none';
+                alert("Erro de conexão. Tente novamente.");
             }
         }
 
@@ -99,10 +145,52 @@
             const list = document.getElementById('compList');
             list.innerHTML = '';
             
+            // 🚨 PROTEÇÃO ANTI-SPAM
             if(res.analiseGeral.length > 0) {
-                list.innerHTML += `<div style="background:#FEE2E2; color:#991B1B; padding:15px; border-radius:8px; margin-bottom:20px">🚨 ${res.analiseGeral.join('<br>')}</div>`;
+                list.innerHTML += `<div style="background:#FEE2E2; color:#991B1B; padding:20px; border-radius:12px; margin-bottom:20px; text-align:center; font-weight:bold; border: 2px solid #EF4444;">
+                    ${res.analiseGeral.join('<br>')}
+                    <div style="margin-top:10px; font-weight:normal; font-size:0.9rem; color:#7F1D1D">
+                        Sua redação foi anulada devido a irregularidades.
+                    </div>
+                </div>`;
+                document.querySelector('.grid-results').style.display = 'none'; // Some com o gráfico
+                return; 
             }
 
+            // --- GRÁFICO RADAR ---
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            const scores = Object.values(res.competencias).map(c => c.nota);
+            
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['C1 (Norma)', 'C2 (Tema)', 'C3 (Argum.)', 'C4 (Coesão)', 'C5 (Interv.)'],
+                    datasets: [{
+                        label: 'Desempenho',
+                        data: scores,
+                        fill: true,
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: '#4F46E5',
+                        pointBackgroundColor: '#4F46E5',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#4F46E5'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 200,
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // --- CARDS DETALHADOS ---
             Object.values(res.competencias).forEach(c => {
                 let color = c.nota >= 160 ? 'var(--success)' : c.nota >= 120 ? 'var(--warning)' : 'var(--danger)';
                 let html = `
@@ -111,13 +199,17 @@
                         <div class="progress-track"><div class="progress-fill" style="width:${(c.nota/200)*100}%; background:${color}"></div></div>
                 `;
                 
-                c.erros.forEach(e => {
-                    if(typeof e === 'object') {
-                        html += `<div class="feedback-item"><strong>${e.descricao}</strong>❌ ${e.exemplo}<small>💡 ${e.acao}</small></div>`;
-                    } else {
-                        html += `<div class="feedback-item">${e}</div>`;
-                    }
-                });
+                if(c.erros.length === 0 && c.nota === 200) {
+                    html += `<div style="color:var(--success); font-weight:600; margin-top:10px; font-size:0.9rem;">✨ Excelente! Nenhum erro encontrado.</div>`;
+                } else {
+                    c.erros.forEach(e => {
+                        if(typeof e === 'object') {
+                            html += `<div class="feedback-item"><strong>${e.descricao}</strong>❌ ${e.exemplo}<small>💡 ${e.acao}</small></div>`;
+                        } else {
+                            html += `<div class="feedback-item">${e}</div>`;
+                        }
+                    });
+                }
                 
                 html += `</div>`;
                 list.innerHTML += html;
