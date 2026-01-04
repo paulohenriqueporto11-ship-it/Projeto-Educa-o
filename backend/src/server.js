@@ -4,8 +4,8 @@ const express = require('express');
 const cors = require('cors');
 
 // --- IMPORTANDO AS ROTAS (Aqui que eu tinha comido bola) ---
-const redacaoRoutes = require('./src/routes/redacaoRoutes');
-const cronogramaRoutes = require('./src/routes/cronogramaRoutes');
+const redacaoRoutes = require('./routes/redacaoRoutes');
+const cronogramaRoutes = require('./routes/cronogramaRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
