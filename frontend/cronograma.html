@@ -3,56 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Planejador - Estuda.IA</title>
+    <title>Minha Rotina - Estuda.IA</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4F46E5">
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
     <div id="configModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 650px;">
             <h2 style="margin-bottom: 10px;">Personalize seu Estudo</h2>
-            <p style="color:var(--text-muted); margin-bottom: 20px;">O que você quer estudar?</p>
+            <p style="color:var(--text-muted); margin-bottom: 20px;">Escolha o que focar. Presets ajustam as matérias automaticamente.</p>
 
-            <label style="font-weight:700; font-size:0.9rem;">MATÉRIAS DO FOCO</label>
+            <div class="focus-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 10px; margin-bottom: 20px;">
+                <button class="btn-outline" onclick="applyPreset('med')">🩺 Medicina</button>
+                <button class="btn-outline" onclick="applyPreset('eng')">📐 Engenharia</button>
+                <button class="btn-outline" onclick="applyPreset('dir')">⚖️ Direito</button>
+            </div>
+
+            <label style="font-weight:700; font-size:0.9rem;">MATÉRIAS SELECIONADAS</label>
             <div class="chips-container" id="subjectChips">
-                <div class="subject-chip" onclick="toggleSubject(this, 'mat')" data-val="mat">Matemática</div>
-                <div class="subject-chip" onclick="toggleSubject(this, 'nat')" data-val="nat">Natureza (Fís/Quí/Bio)</div>
-                <div class="subject-chip" onclick="toggleSubject(this, 'hum')" data-val="hum">Humanas (Hist/Geo)</div>
-                <div class="subject-chip" onclick="toggleSubject(this, 'lin')" data-val="lin">Linguagens</div>
-                <div class="subject-chip" onclick="toggleSubject(this, 'red')" data-val="red">Redação</div>
+                <div class="subject-chip" data-val="mat" onclick="toggleSubject(this)">Matemática</div>
+                <div class="subject-chip" data-val="nat" onclick="toggleSubject(this)">Natureza</div>
+                <div class="subject-chip" data-val="hum" onclick="toggleSubject(this)">Humanas</div>
+                <div class="subject-chip" data-val="lin" onclick="toggleSubject(this)">Linguagens</div>
+                <div class="subject-chip" data-val="red" onclick="toggleSubject(this)">Redação</div>
             </div>
 
-            <label style="font-weight:700; font-size:0.9rem;">INTENSIDADE DIÁRIA</label>
+            <label style="font-weight:700; font-size:0.9rem; margin-top:15px;">INTENSIDADE DIÁRIA</label>
             <div class="intensity-selector">
-                <button class="intensity-btn" onclick="setIntensity('leve')" id="btnLeve">Leve (15min)</button>
-                <button class="intensity-btn active" onclick="setIntensity('medio')" id="btnMedio">Médio (1h)</button>
-                <button class="intensity-btn" onclick="setIntensity('hard')" id="btnHard">Hardcore (3h+)</button>
+                <button class="intensity-btn" data-val="leve" onclick="setIntensity('leve')">Leve (1)</button>
+                <button class="intensity-btn" data-val="medio" onclick="setIntensity('medio')">Médio (3)</button>
+                <button class="intensity-btn" data-val="hard" onclick="setIntensity('hard')">Hardcore (5)</button>
             </div>
 
-            <button class="btn" style="width:100%" onclick="saveConfigAndClose()">Salvar Rotina</button>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeConfig()">Cancelar</button>
+                <button class="btn" style="flex:2" onclick="saveConfig()">Salvar Alterações</button>
+            </div>
         </div>
     </div>
 
     <nav>
         <div class="logo">✨ Estuda.IA</div>
-        <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Voltar</a>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div class="study-timer" id="globalTimer" title="Tempo total estudado">00:00:00</div>
+            <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Sair</a>
+        </div>
     </nav>
 
     <div class="container">
         
-        <div class="streak-bar">
+        <div class="level-container">
+            <div class="level-badge" id="userLevel">1</div>
+            <div class="xp-bar-wrapper">
+                <div class="xp-info">
+                    <span>Nível <span id="lvlNum">1</span></span>
+                    <span id="xpDisplay">0 / 1000 XP</span>
+                </div>
+                <div class="xp-track">
+                    <div class="xp-fill" id="xpBar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.8rem; opacity:0.8">Ofensiva</div>
+                <div style="font-weight:800">🔥 <span id="streakDay">0</span> dias</div>
+            </div>
+        </div>
+
+        <div class="streak-bar" style="background:var(--surface); color:var(--text-main); border:1px solid var(--border); box-shadow:var(--shadow-sm);">
             <div>
-                <div style="font-size: 0.9rem; opacity: 0.9;">Ofensiva</div>
-                <div class="streak-count">🔥 <span id="streakDay">1</span> dias seguidos</div>
+                <div style="font-size: 0.9rem; color:var(--text-muted);">Meta de Hoje</div>
+                <div style="font-weight: 700; font-size:1.1rem;" id="todayGoalLabel">--</div>
             </div>
-            <div style="text-align: right;">
-                <button class="btn-outline" style="color:white; border-color:rgba(255,255,255,0.5); padding: 5px 15px; font-size:0.8rem;" onclick="openConfig()">
-                    ⚙️ Configurar
-                </button>
-            </div>
+            <button class="btn" style="padding: 8px 20px; font-size:0.9rem;" onclick="openConfig()">
+                ⚙️ Configurar Rotina
+            </button>
         </div>
 
         <div class="view-toggle">
@@ -65,196 +93,251 @@
         </div>
 
         <div id="weeklyContainer" style="display: none;">
-            <h3 style="margin-bottom: 20px; color:var(--text-muted);">Sua meta para os próximos 7 dias:</h3>
-            <div id="weeklyList"></div>
+            <h3 style="margin-bottom: 20px; text-align:center;">Seu Planejamento</h3>
+            <div class="weekly-grid" id="weeklyGrid"></div>
+            <div style="margin-top:30px; text-align:center; color:var(--text-muted); font-size:0.9rem;">
+                * A carga horária é baseada na sua configuração de intensidade.
+            </div>
         </div>
 
     </div>
 
     <script>
-        // --- BANCO DE DADOS DE MISSÕES (Pool Genérico) ---
-        const missionPool = {
+        // =========================================================
+        // 1. DADOS (DATA LAYER)
+        // =========================================================
+        const CONSTANTS = {
+            XP_PER_LEVEL: 1000,
+            INTENSITY_MAP: { 'leve': 1, 'medio': 3, 'hard': 5 }
+        };
+
+        const MISSION_POOL = {
             mat: [
-                { title: "Treino de Lógica", desc: "Resolva 5 questões de Matemática.", icon: "📐", xp: 100, url: "simulados.html", type: "Matemática" },
-                { title: "Geometria Básica", desc: "Revise fórmulas de áreas.", icon: "🔵", xp: 80, url: "simulados.html", type: "Matemática" }
+                { t: "Matemática Básica", d: "Revise frações e porcentagem.", i: "➗", url: "simulados.html", type: "Matemática" },
+                { t: "Geometria Plana", d: "Áreas e perímetros.", i: "📐", url: "simulados.html", type: "Matemática" },
+                { t: "Funções", d: "Resolva 3 problemas de 1º grau.", i: "📈", url: "simulados.html", type: "Matemática" },
+                { t: "Estatística", d: "Média, Moda e Mediana.", i: "📊", url: "simulados.html", type: "Matemática" }
             ],
             nat: [
-                { title: "Desafio de Natureza", desc: "Acerte questões de Física ou Química.", icon: "⚛️", xp: 120, url: "simulados.html", type: "Natureza" },
-                { title: "Biologia Celular", desc: "Simulado rápido de Biologia.", icon: "🧬", xp: 100, url: "simulados.html", type: "Natureza" }
+                { t: "Mecânica", d: "Leis de Newton na prática.", i: "🍎", url: "simulados.html", type: "Natureza" },
+                { t: "Estequiometria", d: "Cálculos químicos básicos.", i: "🧪", url: "simulados.html", type: "Natureza" },
+                { t: "Citologia", d: "Estrutura das células.", i: "🧬", url: "simulados.html", type: "Natureza" }
             ],
             hum: [
-                { title: "História do Brasil", desc: "Questões sobre Era Vargas.", icon: "📜", xp: 100, url: "simulados.html", type: "Humanas" },
-                { title: "Geopolítica", desc: "Entenda os conflitos atuais.", icon: "🌍", xp: 90, url: "simulados.html", type: "Humanas" }
+                { t: "Brasil Colônia", d: "Ciclo do Açúcar e Ouro.", i: "🏰", url: "simulados.html", type: "Humanas" },
+                { t: "Geografia Física", d: "Climas e Relevo do Brasil.", i: "🌍", url: "simulados.html", type: "Humanas" },
+                { t: "Filosofia Antiga", d: "Sócrates, Platão e Aristóteles.", i: "🏛️", url: "simulados.html", type: "Humanas" }
             ],
             lin: [
-                { title: "Interpretação de Texto", desc: "Treine leitura dinâmica.", icon: "📖", xp: 80, url: "simulados.html", type: "Linguagens" }
+                { t: "Figuras de Linguagem", d: "Metáfora, Metonímia, etc.", i: "🗣️", url: "simulados.html", type: "Linguagens" },
+                { t: "Interpretação", d: "Leia e resolva 5 questões.", i: "📖", url: "simulados.html", type: "Linguagens" }
             ],
             red: [
-                { title: "Redação da Semana", desc: "Escreva sobre um tema aleatório.", icon: "📝", xp: 200, url: "redacao.html" },
-                { title: "Planejamento de Texto", desc: "Crie apenas a introdução de um tema.", icon: "✍️", xp: 50, url: "redacao.html" }
+                { t: "Redação Completa", d: "Escreva sobre um tema atual.", i: "📝", url: "redacao.html" },
+                { t: "Competência 1", d: "Revise erros de crase.", i: "✍️", url: "redacao.html" },
+                { t: "Projeto de Texto", d: "Planeje apenas os argumentos.", i: "🧠", url: "redacao.html" }
             ]
         };
 
-        // --- ESTADO DO USUÁRIO ---
-        let userConfig = JSON.parse(localStorage.getItem('estudaia_config')) || {
-            subjects: ['red', 'mat'], // Padrão
-            intensity: 'medio',
-            lastLogin: new Date().toDateString(),
-            streak: 1,
-            completedToday: []
+        // =========================================================
+        // 2. ESTADO E PERSISTÊNCIA
+        // =========================================================
+        let state = JSON.parse(localStorage.getItem('estudaia_state_v3')) || {
+            config: { subjects: ['red', 'mat'], intensity: 'medio' },
+            user: { xp: 0, streak: 1, lastLogin: null },
+            dailyPlan: { date: null, missions: [] },
+            history: {} // '2023-10-27': ['mission_id_1']
         };
 
-        // Inicialização
-        function init() {
-            // Se for primeiro acesso, abre config
-            if(!localStorage.getItem('estudaia_config')) {
-                openConfig();
-            } else {
-                renderMissions();
-                renderWeekly();
-            }
-            document.getElementById('streakDay').innerText = userConfig.streak;
+        const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        function saveState() {
+            localStorage.setItem('estudaia_state_v3', JSON.stringify(state));
         }
 
-        // --- GERAÇÃO DE MISSÕES ---
-        function generateDailyMissions() {
-            let missions = [];
-            const countMap = { 'leve': 1, 'medio': 3, 'hard': 5 };
-            const count = countMap[userConfig.intensity] || 3;
-
-            // Pega matérias selecionadas
-            const activeSubjects = userConfig.subjects;
-            
-            // Garante pelo menos 1 missão
-            if(activeSubjects.length === 0) activeSubjects.push('red');
-
-            for(let i=0; i < count; i++) {
-                // Escolhe matéria aleatória das selecionadas
-                const randSub = activeSubjects[Math.floor(Math.random() * activeSubjects.length)];
-                // Escolhe missão aleatória daquela matéria
-                const pool = missionPool[randSub];
-                const mission = pool[Math.floor(Math.random() * pool.length)];
-                
-                // Cria ID único pro dia (ex: mat_0_2023-10-27)
-                const missionId = `${randSub}_${i}_${userConfig.lastLogin}`;
-                
-                missions.push({ ...mission, id: missionId });
+        // =========================================================
+        // 3. LÓGICA DE TIMER (SEM DRIFT)
+        // =========================================================
+        function initTimer() {
+            // Se não tiver tempo de início, define agora
+            if(!localStorage.getItem('timer_start_check')) {
+                localStorage.setItem('timer_start_check', Date.now());
+                localStorage.setItem('timer_bank', 0); // Tempo acumulado em ms
             }
-            return missions;
+
+            setInterval(() => {
+                // O tempo total é o Banco Salvo + (Agora - Último Start)
+                // Para simplificar no MVP, vamos somar e salvar a cada segundo, 
+                // mas usar Date.now() garante precisão se a página recarregar.
+                
+                let totalSecs = parseInt(localStorage.getItem('estudaia_total_seconds') || 0);
+                // Só incrementa se a janela estiver focada (opcional, aqui conta sempre que aberto)
+                totalSecs++;
+                localStorage.setItem('estudaia_total_seconds', totalSecs);
+                
+                const h = Math.floor(totalSecs / 3600).toString().padStart(2,'0');
+                const m = Math.floor((totalSecs % 3600) / 60).toString().padStart(2,'0');
+                const s = (totalSecs % 60).toString().padStart(2,'0');
+                document.getElementById('globalTimer').innerText = `${h}:${m}:${s}`;
+            }, 1000);
         }
 
-        function renderMissions() {
-            const container = document.getElementById('missionsList');
-            // Como não temos backend, vamos gerar "pseudo-aleatório" baseado no dia
-            // Para simplificar, vou gerar sempre que recarregar SE não tiver salvo no dia
-            // (Num app real, salvaríamos a lista do dia no banco)
+        // =========================================================
+        // 4. GERAÇÃO DE MISSÕES (ROTATIVAS)
+        // =========================================================
+        function checkAndGenerateDailyMissions() {
+            // Se já tem plano pra hoje, não faz nada
+            if (state.dailyPlan.date === todayDate && state.dailyPlan.missions.length > 0) {
+                renderMissionsUI();
+                return;
+            }
+
+            // Gera novo plano
+            const count = CONSTANTS.INTENSITY_MAP[state.config.intensity];
+            let activeSubjects = [...state.config.subjects];
+            if (activeSubjects.length === 0) activeSubjects = ['red']; // Fallback
+
+            let newMissions = [];
             
-            const missions = generateDailyMissions();
+            // Usa o dia do ano para rotacionar as missões (Shuffle determinístico)
+            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+
+            for (let i = 0; i < count; i++) {
+                const subKey = activeSubjects[i % activeSubjects.length];
+                const pool = MISSION_POOL[subKey];
+                
+                // Pega missão baseada no dia para não repetir sempre a primeira
+                const missionIndex = (dayOfYear + i) % pool.length; 
+                const missionData = pool[missionIndex];
+
+                newMissions.push({
+                    id: `${todayDate}_${subKey}_${i}`,
+                    ...missionData
+                });
+            }
+
+            // Atualiza Streak se for dia consecutivo
+            if (state.user.lastLogin) {
+                const last = new Date(state.user.lastLogin);
+                const now = new Date(todayDate);
+                const diffTime = Math.abs(now - last);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                
+                if (diffDays === 1) state.user.streak++;
+                else if (diffDays > 1) state.user.streak = 1;
+            }
             
+            state.user.lastLogin = todayDate;
+            state.dailyPlan = { date: todayDate, missions: newMissions };
+            saveState();
+            renderMissionsUI();
+        }
+
+        // =========================================================
+        // 5. RENDERIZAÇÃO DA UI
+        // =========================================================
+        function renderMissionsUI() {
+            const list = document.getElementById('missionsList');
+            const history = state.history[todayDate] || [];
             let html = '';
-            if(missions.length === 0) html = '<p style="text-align:center">Nenhuma matéria selecionada.</p>';
 
-            missions.forEach(m => {
-                const isDone = userConfig.completedToday.includes(m.id);
-                const btnText = m.url.includes('redacao') ? 'Escrever' : 'Jogar';
-                const action = m.url.includes('simulados') 
-                    ? `goToSimulado('${m.type}', '${m.id}')` 
+            state.dailyPlan.missions.forEach(m => {
+                const isDone = history.includes(m.id);
+                const btnAction = isDone ? 'Revisar' : (m.url.includes('redacao') ? 'Escrever' : 'Iniciar');
+                
+                // Ação do botão: Se é simulado, passa o tipo
+                const clickFn = m.url.includes('simulados') 
+                    ? `goToSimulado('${m.type}', '${m.id}')`
                     : `goToLink('${m.url}', '${m.id}')`;
 
                 html += `
                     <div class="mission-card ${isDone ? 'mission-done' : ''}">
                         <div class="mission-left">
-                            <div class="mission-icon">${m.icon}</div>
+                            <div class="mission-icon">${m.i}</div>
                             <div class="mission-info">
-                                <h3>${m.title}</h3>
-                                <p>${m.desc}</p>
-                                <span class="xp-badge">+${m.xp} XP</span>
+                                <h3>${m.t}</h3>
+                                <p>${m.d}</p>
                             </div>
                         </div>
-                        <button class="btn-start" onclick="${action}">
-                            ${isDone ? 'Feito ✅' : btnText + ' →'}
+                        <button class="btn-start" onclick="${clickFn}">
+                            ${isDone ? 'Concluído ✅' : btnAction + ' →'}
                         </button>
                     </div>
                 `;
             });
-            container.innerHTML = html;
+
+            list.innerHTML = html;
+            updateGamificationUI();
+            
+            // Atualiza texto da meta
+            const total = state.dailyPlan.missions.length;
+            const done = history.length;
+            document.getElementById('todayGoalLabel').innerText = `${done}/${total} Concluídas`;
         }
 
-        function renderWeekly() {
-            // Gera uma visão estática baseada na intensidade
-            const container = document.getElementById('weeklyList');
-            const intensityMult = { 'leve': 5, 'medio': 15, 'hard': 30 };
-            const total = intensityMult[userConfig.intensity];
-            
-            let html = `
-                <div class="weekly-card">
-                    <span style="font-size:2rem">🎯</span>
-                    <div><strong>Meta Total:</strong> Completar ${total} atividades.</div>
-                </div>
-            `;
-            
-            userConfig.subjects.forEach(sub => {
-                const names = { 'mat': 'Matemática', 'nat': 'Natureza', 'hum': 'Humanas', 'lin': 'Linguagens', 'red': 'Redação' };
+        function updateGamificationUI() {
+            const xp = state.user.xp;
+            const level = Math.floor(xp / CONSTANTS.XP_PER_LEVEL) + 1;
+            const xpInLevel = xp % CONSTANTS.XP_PER_LEVEL;
+            const percent = (xpInLevel / CONSTANTS.XP_PER_LEVEL) * 100;
+
+            document.getElementById('userLevel').innerText = level;
+            document.getElementById('lvlNum').innerText = level;
+            document.getElementById('xpDisplay').innerText = `${xpInLevel} / ${CONSTANTS.XP_PER_LEVEL} XP`;
+            document.getElementById('xpBar').style.width = `${percent}%`;
+            document.getElementById('streakDay').innerText = state.user.streak;
+        }
+
+        function renderWeeklyView() {
+            const container = document.getElementById('weeklyGrid');
+            const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const todayIdx = new Date().getDay();
+            const intensityVal = CONSTANTS.INTENSITY_MAP[state.config.intensity];
+
+            let html = '';
+            days.forEach((day, idx) => {
+                const isToday = idx === todayIdx ? 'active' : '';
                 html += `
-                    <div class="weekly-card">
-                        <span style="font-size:1.5rem">📅</span>
-                        <div>Focar em <strong>${names[sub]}</strong> (Pelo menos 2x na semana)</div>
+                    <div class="day-card ${isToday}">
+                        <div class="day-name">${day}</div>
+                        <div class="day-load">${intensityVal} 🎯</div>
                     </div>
                 `;
             });
             container.innerHTML = html;
         }
 
-        // --- SISTEMA DE CONFIGURAÇÃO (MODAL) ---
-        let tempSubjects = [];
-        let tempIntensity = 'medio';
-
-        function openConfig() {
-            document.getElementById('configModal').style.display = 'flex';
-            // Carrega estado atual
-            tempSubjects = [...userConfig.subjects];
-            tempIntensity = userConfig.intensity;
-            updateChipsUI();
-            setIntensity(tempIntensity); // Atualiza visual
+        // =========================================================
+        // 6. AÇÕES & NAVEGAÇÃO
+        // =========================================================
+        function goToLink(url, id) {
+            completeMission(id);
+            setTimeout(() => window.location.href = url, 500);
         }
 
-        function toggleSubject(el, sub) {
-            if(tempSubjects.includes(sub)) {
-                tempSubjects = tempSubjects.filter(s => s !== sub);
-                el.classList.remove('selected');
-            } else {
-                tempSubjects.push(sub);
-                el.classList.add('selected');
+        function goToSimulado(type, id) {
+            completeMission(id);
+            localStorage.setItem('simulado_auto_start', type);
+            setTimeout(() => window.location.href = 'simulados.html', 500);
+        }
+
+        function completeMission(id) {
+            if (!state.history[todayDate]) state.history[todayDate] = [];
+            
+            if (!state.history[todayDate].includes(id)) {
+                state.history[todayDate].push(id);
+                state.user.xp += 150; // XP por missão
+                saveState();
+                
+                // Efeito Confete 🎉
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
             }
         }
 
-        function updateChipsUI() {
-            document.querySelectorAll('.subject-chip').forEach(chip => {
-                if(tempSubjects.includes(chip.dataset.val)) chip.classList.add('selected');
-                else chip.classList.remove('selected');
-            });
-        }
-
-        function setIntensity(level) {
-            tempIntensity = level;
-            document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
-            const idMap = { 'leve': 'btnLeve', 'medio': 'btnMedio', 'hard': 'btnHard' };
-            document.getElementById(idMap[level]).classList.add('active');
-        }
-
-        function saveConfigAndClose() {
-            if(tempSubjects.length === 0) return alert("Selecione pelo menos uma matéria!");
-            
-            userConfig.subjects = tempSubjects;
-            userConfig.intensity = tempIntensity;
-            localStorage.setItem('estudaia_config', JSON.stringify(userConfig));
-            
-            document.getElementById('configModal').style.display = 'none';
-            renderMissions(); // Regera a lista com as novas configs
-            renderWeekly();
-        }
-
-        // --- NAVEGAÇÃO ---
         function switchView(view) {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             if(view === 'daily') {
@@ -265,28 +348,105 @@
                 document.getElementById('viewWeekly').classList.add('active');
                 document.getElementById('dailyContainer').style.display = 'none';
                 document.getElementById('weeklyContainer').style.display = 'block';
+                renderWeeklyView();
             }
         }
 
-        function goToLink(url, id) {
-            markDone(id);
-            window.location.href = url;
+        // =========================================================
+        // 7. MODAL DE CONFIGURAÇÃO (LÓGICA)
+        // =========================================================
+        let tempSubjects = [];
+        let tempIntensity = 'medio';
+
+        function openConfig() {
+            // Sincroniza estado atual com UI do modal
+            tempSubjects = [...state.config.subjects];
+            tempIntensity = state.config.intensity;
+            
+            updateChipsUI();
+            updateIntensityUI();
+            
+            document.getElementById('configModal').style.display = 'flex';
         }
 
-        function goToSimulado(type, id) {
-            markDone(id);
-            localStorage.setItem('simulado_auto_start', type);
-            window.location.href = 'simulados.html';
+        function closeConfig() {
+            document.getElementById('configModal').style.display = 'none';
         }
 
-        function markDone(id) {
-            if(!userConfig.completedToday.includes(id)) {
-                userConfig.completedToday.push(id);
-                localStorage.setItem('estudaia_config', JSON.stringify(userConfig));
+        // Fecha ao clicar fora
+        document.getElementById('configModal').addEventListener('click', (e) => {
+            if (e.target.id === 'configModal') closeConfig();
+        });
+
+        function toggleSubject(el) {
+            const val = el.dataset.val;
+            if (tempSubjects.includes(val)) {
+                tempSubjects = tempSubjects.filter(s => s !== val);
+            } else {
+                tempSubjects.push(val);
             }
+            updateChipsUI();
         }
 
-        init();
+        function updateChipsUI() {
+            document.querySelectorAll('.subject-chip').forEach(chip => {
+                if (tempSubjects.includes(chip.dataset.val)) chip.classList.add('selected');
+                else chip.classList.remove('selected');
+            });
+        }
+
+        function setIntensity(val) {
+            tempIntensity = val;
+            updateIntensityUI();
+        }
+
+        function updateIntensityUI() {
+            document.querySelectorAll('.intensity-btn').forEach(btn => {
+                if (btn.dataset.val === tempIntensity) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        function applyPreset(type) {
+            if(type === 'med') tempSubjects = ['nat', 'red', 'nat', 'mat'];
+            if(type === 'eng') tempSubjects = ['mat', 'nat', 'mat', 'red'];
+            if(type === 'dir') tempSubjects = ['hum', 'lin', 'hum', 'red'];
+            updateChipsUI();
+        }
+
+        function saveConfig() {
+            if(tempSubjects.length === 0) return alert("Selecione pelo menos uma matéria!");
+            
+            // Verifica se mudou algo que exige regerar o plano
+            const changed = JSON.stringify(state.config.subjects) !== JSON.stringify(tempSubjects) ||
+                            state.config.intensity !== tempIntensity;
+
+            state.config.subjects = tempSubjects;
+            state.config.intensity = tempIntensity;
+            
+            if(changed) {
+                // Força regeração do plano de hoje
+                state.dailyPlan = { date: null, missions: [] };
+            }
+            
+            saveState();
+            closeConfig();
+            checkAndGenerateDailyMissions();
+        }
+
+        // =========================================================
+        // STARTUP
+        // =========================================================
+        initTimer();
+        
+        // Se nunca configurou, abre modal
+        if (state.config.subjects.length === 0 && !localStorage.getItem('estudaia_onboarded')) {
+            localStorage.setItem('estudaia_onboarded', 'true');
+            openConfig();
+        } else {
+            checkAndGenerateDailyMissions();
+        }
+
     </script>
 </body>
 </html>
