@@ -3,79 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Rotina - Estuda.IA</title>
+    <title>Meu Planejador - Estuda.IA</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4F46E5">
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        .streak-bar {
-            background: linear-gradient(135deg, #FF9068 0%, #FF4B1F 100%);
-            color: white; padding: 15px 20px; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 30px; box-shadow: 0 4px 15px rgba(255, 75, 31, 0.3);
-        }
-        .mission-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 16px; padding: 20px; margin-bottom: 15px;
-            display: flex; align-items: center; justify-content: space-between;
-            transition: 0.2s; position: relative; overflow: hidden;
-        }
-        .mission-left { display: flex; align-items: center; gap: 15px; }
-        .mission-icon { 
-            width: 50px; height: 50px; background: #EEF2FF; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
-        }
-        .mission-info h3 { font-size: 1.1rem; margin-bottom: 4px; color: var(--text-main); }
-        .mission-info p { font-size: 0.9rem; color: var(--text-muted); }
-        .xp-badge { 
-            background: #F3F4F6; color: var(--text-muted); padding: 4px 8px; 
-            border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-block; margin-top: 5px;
-        }
-        .btn-start {
-            background: var(--primary); color: white; border: none;
-            padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;
-            text-decoration: none; font-size: 0.9rem;
-        }
-        .mission-done { opacity: 0.6; background: #F9FAFB; pointer-events: none; }
-        .mission-done .btn-start { background: var(--success); }
-        
-        @media (max-width: 600px) {
-            .mission-card { flex-direction: column; text-align: center; gap: 15px; }
-            .mission-left { flex-direction: column; }
-            .btn-start { width: 100%; }
-        }
-    </style>
 </head>
 <body>
 
-    <div id="focusScreen" class="focus-selection-overlay" style="display: none;">
-        <h1 style="text-align: center; margin-bottom: 10px;">Qual é o seu objetivo?</h1>
-        <p style="text-align: center; color: var(--text-muted); max-width: 500px;">
-            Personalizaremos suas missões diárias com base no curso que você quer passar.
-        </p>
+    <div id="configModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="margin-bottom: 10px;">Personalize seu Estudo</h2>
+            <p style="color:var(--text-muted); margin-bottom: 20px;">O que você quer estudar?</p>
 
-        <div class="focus-grid">
-            <div class="focus-card" onclick="setFocus('biologicas')">
-                <span class="focus-icon">🧬</span>
-                <div class="focus-title">Medicina / Saúde</div>
-                <small style="color:var(--text-muted)">Peso em Natureza</small>
+            <label style="font-weight:700; font-size:0.9rem;">MATÉRIAS DO FOCO</label>
+            <div class="chips-container" id="subjectChips">
+                <div class="subject-chip" onclick="toggleSubject(this, 'mat')" data-val="mat">Matemática</div>
+                <div class="subject-chip" onclick="toggleSubject(this, 'nat')" data-val="nat">Natureza (Fís/Quí/Bio)</div>
+                <div class="subject-chip" onclick="toggleSubject(this, 'hum')" data-val="hum">Humanas (Hist/Geo)</div>
+                <div class="subject-chip" onclick="toggleSubject(this, 'lin')" data-val="lin">Linguagens</div>
+                <div class="subject-chip" onclick="toggleSubject(this, 'red')" data-val="red">Redação</div>
             </div>
-            <div class="focus-card" onclick="setFocus('exatas')">
-                <span class="focus-icon">📐</span>
-                <div class="focus-title">Engenharia / Exatas</div>
-                <small style="color:var(--text-muted)">Peso em Matemática</small>
+
+            <label style="font-weight:700; font-size:0.9rem;">INTENSIDADE DIÁRIA</label>
+            <div class="intensity-selector">
+                <button class="intensity-btn" onclick="setIntensity('leve')" id="btnLeve">Leve (15min)</button>
+                <button class="intensity-btn active" onclick="setIntensity('medio')" id="btnMedio">Médio (1h)</button>
+                <button class="intensity-btn" onclick="setIntensity('hard')" id="btnHard">Hardcore (3h+)</button>
             </div>
-            <div class="focus-card" onclick="setFocus('humanas')">
-                <span class="focus-icon">⚖️</span>
-                <div class="focus-title">Direito / Humanas</div>
-                <small style="color:var(--text-muted)">Peso em História</small>
-            </div>
-            <div class="focus-card" onclick="setFocus('geral')">
-                <span class="focus-icon">🎓</span>
-                <div class="focus-title">Treino Geral</div>
-                <small style="color:var(--text-muted)">Equilíbrio total</small>
-            </div>
+
+            <button class="btn" style="width:100%" onclick="saveConfigAndClose()">Salvar Rotina</button>
         </div>
     </div>
 
@@ -84,107 +41,125 @@
         <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Voltar</a>
     </nav>
 
-    <div class="container" id="mainContent">
+    <div class="container">
         
         <div class="streak-bar">
             <div>
-                <div style="font-size: 0.9rem; opacity: 0.9;">Ofensiva de Estudos</div>
-                <div class="streak-count">🔥 <span id="streakDay">1</span> dias</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">Ofensiva</div>
+                <div class="streak-count">🔥 <span id="streakDay">1</span> dias seguidos</div>
             </div>
             <div style="text-align: right;">
-                <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 5px;">Foco Atual</div>
-                <span class="current-focus-badge" id="currentFocusLabel" onclick="changeFocus()">Geral</span>
+                <button class="btn-outline" style="color:white; border-color:rgba(255,255,255,0.5); padding: 5px 15px; font-size:0.8rem;" onclick="openConfig()">
+                    ⚙️ Configurar
+                </button>
             </div>
         </div>
 
-        <h2 style="margin-bottom: 20px;">Missões de Hoje</h2>
-        <div id="missionsList"></div>
+        <div class="view-toggle">
+            <div class="toggle-btn active" id="viewDaily" onclick="switchView('daily')">Missões de Hoje</div>
+            <div class="toggle-btn" id="viewWeekly" onclick="switchView('weekly')">Visão Semanal</div>
+        </div>
+
+        <div id="dailyContainer">
+            <div id="missionsList"></div>
+        </div>
+
+        <div id="weeklyContainer" style="display: none;">
+            <h3 style="margin-bottom: 20px; color:var(--text-muted);">Sua meta para os próximos 7 dias:</h3>
+            <div id="weeklyList"></div>
+        </div>
 
     </div>
 
     <script>
-        // --- BANCO DE MISSÕES POR PERFIL ---
-        const missionDatabase = {
-            exatas: [
-                { id: 'm_red_tec', title: "Redação Técnica", desc: "Tema: Impactos da IA no Trabalho.", icon: "📝", xp: 150, url: "redacao.html", btn: "Escrever" },
-                { id: 'm_sim_mat', title: "Matemática Pura", desc: "Acerte 3 questões de Lógica.", icon: "📐", xp: 100, url: "simulados.html", btn: "Calcular", type: "Matemática" },
-                { id: 'm_sim_nat', title: "Física e Química", desc: "Treino de Ciências da Natureza.", icon: "⚛️", xp: 100, url: "simulados.html", btn: "Treinar", type: "Natureza" }
+        // --- BANCO DE DADOS DE MISSÕES (Pool Genérico) ---
+        const missionPool = {
+            mat: [
+                { title: "Treino de Lógica", desc: "Resolva 5 questões de Matemática.", icon: "📐", xp: 100, url: "simulados.html", type: "Matemática" },
+                { title: "Geometria Básica", desc: "Revise fórmulas de áreas.", icon: "🔵", xp: 80, url: "simulados.html", type: "Matemática" }
             ],
-            humanas: [
-                { id: 'm_red_soc', title: "Redação Social", desc: "Tema: Desafios da Democracia.", icon: "✍️", xp: 150, url: "redacao.html", btn: "Escrever" },
-                { id: 'm_sim_hum', title: "História e Geo", desc: "Acerte questões de Humanas.", icon: "🏛️", xp: 100, url: "simulados.html", btn: "Responder", type: "Humanas" },
-                { id: 'm_sim_lin', title: "Interpretação", desc: "Treino de Linguagens.", icon: "📖", xp: 100, url: "simulados.html", btn: "Ler", type: "Linguagens" }
+            nat: [
+                { title: "Desafio de Natureza", desc: "Acerte questões de Física ou Química.", icon: "⚛️", xp: 120, url: "simulados.html", type: "Natureza" },
+                { title: "Biologia Celular", desc: "Simulado rápido de Biologia.", icon: "🧬", xp: 100, url: "simulados.html", type: "Natureza" }
             ],
-            biologicas: [
-                { id: 'm_red_bio', title: "Redação Saúde", desc: "Tema: Saúde Pública no Brasil.", icon: "🏥", xp: 150, url: "redacao.html", btn: "Escrever" },
-                { id: 'm_sim_bio', title: "Biologia Total", desc: "Foco em Citologia e Genética.", icon: "🧬", xp: 120, url: "simulados.html", btn: "Investigar", type: "Natureza" },
-                { id: 'm_sim_qui', title: "Química Orgânica", desc: "Revisão de Química.", icon: "🧪", xp: 100, url: "simulados.html", btn: "Misturar", type: "Natureza" }
+            hum: [
+                { title: "História do Brasil", desc: "Questões sobre Era Vargas.", icon: "📜", xp: 100, url: "simulados.html", type: "Humanas" },
+                { title: "Geopolítica", desc: "Entenda os conflitos atuais.", icon: "🌍", xp: 90, url: "simulados.html", type: "Humanas" }
             ],
-            geral: [
-                { id: 'm_red_ger', title: "Redação ENEM", desc: "Tema Aleatório estilo ENEM.", icon: "📝", xp: 150, url: "redacao.html", btn: "Escrever" },
-                { id: 'm_sim_ger', title: "Simulado Geral", desc: "Questões mistas para testar tudo.", icon: "🎲", xp: 100, url: "simulados.html", btn: "Jogar", type: "Geral" },
-                { id: 'm_sim_mat_basic', title: "Matemática Básica", desc: "Garanta os pontos fáceis.", icon: "➗", xp: 80, url: "simulados.html", btn: "Treinar", type: "Matemática" }
+            lin: [
+                { title: "Interpretação de Texto", desc: "Treine leitura dinâmica.", icon: "📖", xp: 80, url: "simulados.html", type: "Linguagens" }
+            ],
+            red: [
+                { title: "Redação da Semana", desc: "Escreva sobre um tema aleatório.", icon: "📝", xp: 200, url: "redacao.html" },
+                { title: "Planejamento de Texto", desc: "Crie apenas a introdução de um tema.", icon: "✍️", xp: 50, url: "redacao.html" }
             ]
         };
 
-        // --- LÓGICA DO USUÁRIO ---
-        let userState = JSON.parse(localStorage.getItem('estudaia_state')) || {
-            focus: null,
-            xp: 0,
-            streak: 1,
+        // --- ESTADO DO USUÁRIO ---
+        let userConfig = JSON.parse(localStorage.getItem('estudaia_config')) || {
+            subjects: ['red', 'mat'], // Padrão
+            intensity: 'medio',
             lastLogin: new Date().toDateString(),
-            completedMissions: []
+            streak: 1,
+            completedToday: []
         };
 
-        // Verifica Focus
+        // Inicialização
         function init() {
-            if (!userState.focus) {
-                document.getElementById('focusScreen').style.display = 'flex';
-                document.getElementById('mainContent').style.display = 'none';
+            // Se for primeiro acesso, abre config
+            if(!localStorage.getItem('estudaia_config')) {
+                openConfig();
             } else {
-                document.getElementById('focusScreen').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
                 renderMissions();
+                renderWeekly();
             }
+            document.getElementById('streakDay').innerText = userConfig.streak;
         }
 
-        function setFocus(focusType) {
-            userState.focus = focusType;
-            saveState();
-            init();
-        }
+        // --- GERAÇÃO DE MISSÕES ---
+        function generateDailyMissions() {
+            let missions = [];
+            const countMap = { 'leve': 1, 'medio': 3, 'hard': 5 };
+            const count = countMap[userConfig.intensity] || 3;
 
-        function changeFocus() {
-            if(confirm("Deseja alterar seu foco de estudos? Isso mudará suas missões de amanhã.")) {
-                userState.focus = null;
-                saveState();
-                init();
+            // Pega matérias selecionadas
+            const activeSubjects = userConfig.subjects;
+            
+            // Garante pelo menos 1 missão
+            if(activeSubjects.length === 0) activeSubjects.push('red');
+
+            for(let i=0; i < count; i++) {
+                // Escolhe matéria aleatória das selecionadas
+                const randSub = activeSubjects[Math.floor(Math.random() * activeSubjects.length)];
+                // Escolhe missão aleatória daquela matéria
+                const pool = missionPool[randSub];
+                const mission = pool[Math.floor(Math.random() * pool.length)];
+                
+                // Cria ID único pro dia (ex: mat_0_2023-10-27)
+                const missionId = `${randSub}_${i}_${userConfig.lastLogin}`;
+                
+                missions.push({ ...mission, id: missionId });
             }
+            return missions;
         }
 
-        function saveState() {
-            localStorage.setItem('estudaia_state', JSON.stringify(userState));
-        }
-
-        // Renderiza Missões Baseado no Foco
         function renderMissions() {
-            // Atualiza UI
-            const mapNames = { exatas: "Engenharia", humanas: "Direito/Humanas", biologicas: "Medicina", geral: "Geral" };
-            document.getElementById('currentFocusLabel').innerText = mapNames[userState.focus] || "Geral";
-            document.getElementById('streakDay').innerText = userState.streak;
-
             const container = document.getElementById('missionsList');
-            const missions = missionDatabase[userState.focus] || missionDatabase['geral'];
+            // Como não temos backend, vamos gerar "pseudo-aleatório" baseado no dia
+            // Para simplificar, vou gerar sempre que recarregar SE não tiver salvo no dia
+            // (Num app real, salvaríamos a lista do dia no banco)
+            
+            const missions = generateDailyMissions();
             
             let html = '';
+            if(missions.length === 0) html = '<p style="text-align:center">Nenhuma matéria selecionada.</p>';
 
             missions.forEach(m => {
-                const isDone = userState.completedMissions.includes(m.id);
-                
-                // Lógica especial para passar o parâmetro pro simulado
-                const clickAction = m.url.includes('simulados') 
-                    ? `goToSimulado('${m.type}', '${m.id}')`
-                    : `goToRedacao('${m.id}')`;
+                const isDone = userConfig.completedToday.includes(m.id);
+                const btnText = m.url.includes('redacao') ? 'Escrever' : 'Jogar';
+                const action = m.url.includes('simulados') 
+                    ? `goToSimulado('${m.type}', '${m.id}')` 
+                    : `goToLink('${m.url}', '${m.id}')`;
 
                 html += `
                     <div class="mission-card ${isDone ? 'mission-done' : ''}">
@@ -196,8 +171,8 @@
                                 <span class="xp-badge">+${m.xp} XP</span>
                             </div>
                         </div>
-                        <button class="btn-start" onclick="${clickAction}">
-                            ${isDone ? 'Concluído ✅' : m.btn + ' →'}
+                        <button class="btn-start" onclick="${action}">
+                            ${isDone ? 'Feito ✅' : btnText + ' →'}
                         </button>
                     </div>
                 `;
@@ -205,35 +180,110 @@
             container.innerHTML = html;
         }
 
-        // Funções de Navegação Inteligente
-        function goToSimulado(type, missionId) {
-            // Salva qual simulado ele tem que fazer
-            localStorage.setItem('simulado_auto_start', type);
-            // Marca como "clicado" (em um app real validaria o fim)
-            markAsDone(missionId);
-            window.location.href = 'simulados.html';
+        function renderWeekly() {
+            // Gera uma visão estática baseada na intensidade
+            const container = document.getElementById('weeklyList');
+            const intensityMult = { 'leve': 5, 'medio': 15, 'hard': 30 };
+            const total = intensityMult[userConfig.intensity];
+            
+            let html = `
+                <div class="weekly-card">
+                    <span style="font-size:2rem">🎯</span>
+                    <div><strong>Meta Total:</strong> Completar ${total} atividades.</div>
+                </div>
+            `;
+            
+            userConfig.subjects.forEach(sub => {
+                const names = { 'mat': 'Matemática', 'nat': 'Natureza', 'hum': 'Humanas', 'lin': 'Linguagens', 'red': 'Redação' };
+                html += `
+                    <div class="weekly-card">
+                        <span style="font-size:1.5rem">📅</span>
+                        <div>Focar em <strong>${names[sub]}</strong> (Pelo menos 2x na semana)</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
-        function goToRedacao(missionId) {
-            markAsDone(missionId);
-            window.location.href = 'redacao.html';
+        // --- SISTEMA DE CONFIGURAÇÃO (MODAL) ---
+        let tempSubjects = [];
+        let tempIntensity = 'medio';
+
+        function openConfig() {
+            document.getElementById('configModal').style.display = 'flex';
+            // Carrega estado atual
+            tempSubjects = [...userConfig.subjects];
+            tempIntensity = userConfig.intensity;
+            updateChipsUI();
+            setIntensity(tempIntensity); // Atualiza visual
         }
 
-        function markAsDone(id) {
-            if(!userState.completedMissions.includes(id)) {
-                userState.completedMissions.push(id);
-                userState.xp += 100; // Simplificado
-                saveState();
+        function toggleSubject(el, sub) {
+            if(tempSubjects.includes(sub)) {
+                tempSubjects = tempSubjects.filter(s => s !== sub);
+                el.classList.remove('selected');
+            } else {
+                tempSubjects.push(sub);
+                el.classList.add('selected');
             }
         }
 
-        // Reseta missões se mudou o dia
-        const today = new Date().toDateString();
-        if (userState.lastLogin !== today) {
-            userState.completedMissions = [];
-            userState.lastLogin = today;
-            // userState.streak++; (Lógica de streak real viria aqui)
-            saveState();
+        function updateChipsUI() {
+            document.querySelectorAll('.subject-chip').forEach(chip => {
+                if(tempSubjects.includes(chip.dataset.val)) chip.classList.add('selected');
+                else chip.classList.remove('selected');
+            });
+        }
+
+        function setIntensity(level) {
+            tempIntensity = level;
+            document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
+            const idMap = { 'leve': 'btnLeve', 'medio': 'btnMedio', 'hard': 'btnHard' };
+            document.getElementById(idMap[level]).classList.add('active');
+        }
+
+        function saveConfigAndClose() {
+            if(tempSubjects.length === 0) return alert("Selecione pelo menos uma matéria!");
+            
+            userConfig.subjects = tempSubjects;
+            userConfig.intensity = tempIntensity;
+            localStorage.setItem('estudaia_config', JSON.stringify(userConfig));
+            
+            document.getElementById('configModal').style.display = 'none';
+            renderMissions(); // Regera a lista com as novas configs
+            renderWeekly();
+        }
+
+        // --- NAVEGAÇÃO ---
+        function switchView(view) {
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            if(view === 'daily') {
+                document.getElementById('viewDaily').classList.add('active');
+                document.getElementById('dailyContainer').style.display = 'block';
+                document.getElementById('weeklyContainer').style.display = 'none';
+            } else {
+                document.getElementById('viewWeekly').classList.add('active');
+                document.getElementById('dailyContainer').style.display = 'none';
+                document.getElementById('weeklyContainer').style.display = 'block';
+            }
+        }
+
+        function goToLink(url, id) {
+            markDone(id);
+            window.location.href = url;
+        }
+
+        function goToSimulado(type, id) {
+            markDone(id);
+            localStorage.setItem('simulado_auto_start', type);
+            window.location.href = 'simulados.html';
+        }
+
+        function markDone(id) {
+            if(!userConfig.completedToday.includes(id)) {
+                userConfig.completedToday.push(id);
+                localStorage.setItem('estudaia_config', JSON.stringify(userConfig));
+            }
         }
 
         init();
