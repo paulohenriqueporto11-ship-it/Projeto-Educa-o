@@ -1,6 +1,5 @@
 // src/ia_engine/corretor.js
-// VERSÃO 18.0 - GOLD MASTER (Production Ready)
-// Correção de bugs críticos, ajuste de C1 para pontuação interna e estabilidade.
+// VERSÃO 19.0 - FINAL STABLE (Com Proteção Anti-Crash)
 
 // =================================================================
 // ⚙️ CONFIGURAÇÕES
@@ -8,7 +7,7 @@
 const CONFIG = {
     PONTOS: {
         MAX: 200,
-        MIN_SAFETY: 60, // Nota mínima para textos legíveis (evita zeros injustos)
+        MIN_SAFETY: 60, // Nota mínima para textos legíveis
         PENALIDADE: {
             LEVE: 10,
             MEDIA: 20,
@@ -25,10 +24,9 @@ const CONFIG = {
     },
     LIMITES: {
         MIN_PALAVRAS: 50,
-        // CORREÇÃO: Definido valor base para o cálculo dinâmico
         MIN_VOCABULARIO_UNICO: 0.22, 
-        FRASE_LONGA_QTD: 40, // Limite padrão (sem vírgulas)
-        FRASE_LONGA_COM_PONTUACAO: 60, // Limite estendido (se tiver vírgulas)
+        FRASE_LONGA_QTD: 40, 
+        FRASE_LONGA_COM_PONTUACAO: 60,
         MAX_REPETICAO_CONECTIVO: 4, 
         MIN_PARAGRAFOS: 3,
         TAMANHO_DETALHAMENTO: 70,
@@ -54,7 +52,6 @@ const LEXICO = {
     
     PONTUACAO_DUPLICADA: /([!?.]){2,}/, 
     
-    // Separado por gravidade
     INFORMALIDADE: ['vc', 'pq', 'tb', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'tá', 'né', 'daí', 'aí', 'então', 'coisa'],
     GIRIAS: ['pô', 'caraca', 'mano', 'véi', 'tipo assim', 'bagulho', 'treta', 'tlgd', 'blz', 'zuado'],
     
@@ -109,9 +106,7 @@ const CACHE = {
         ...el,
         regex: new RegExp(`\\b(${el.termos.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'i')
     })),
-    
     AUTORIDADE_REGEX: new RegExp(`\\b(${LEXICO.REPERTORIO_AUTORIDADE.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'i'),
-    
     CONECTIVOS_REGEX: LEXICO.CONECTIVOS_TRANSICAO.map(c => ({
         termo: c,
         regex: new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
@@ -128,6 +123,7 @@ function normalizar(txt) {
 }
 
 function encontrarTrecho(texto, termo) {
+    if (!texto || !termo) return termo;
     const idx = texto.toLowerCase().indexOf(termo.toLowerCase());
     if (idx !== -1) {
         const inicio = Math.max(0, idx - 15);
@@ -145,7 +141,7 @@ function penalizar(comp, pontos, tipo, descricao, exemplo, acao, severidade = 'm
 }
 
 function tokenizar(texto) {
-    return texto.match(/\b[a-zA-ZÀ-ÿ0-9'-]+\b/g) || [];
+    return texto.match(/[a-zA-ZÀ-ÿ0-9'-]+/g) || [];
 }
 
 function detectarRepeticaoFrases(frases) {
@@ -167,8 +163,15 @@ function zerarNotas(resultado) {
 }
 
 function contemTermo(texto, listaTermos) {
-    // Busca simples e rápida
     return listaTermos.some(termo => texto.includes(termo));
+}
+
+function contarOcorrencias(texto, termo) {
+    // Escape simples para evitar crash em regex
+    const termoEscapado = termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${termoEscapado}\\b`, 'gi');
+    const matches = texto.match(regex);
+    return matches ? matches.length : 0;
 }
 
 // =================================================================
@@ -178,7 +181,7 @@ function contemTermo(texto, listaTermos) {
 function analisarC1(texto, tokens, frases, resC1) {
     const tokensNorm = tokens.map(t => t.toLowerCase());
     
-    // 1. Informalidade vs Gíria
+    // 1. Oralidade vs Gíria
     const girias = tokensNorm.filter(t => LEXICO.GIRIAS.includes(t));
     if (girias.length > 0) {
         const trecho = encontrarTrecho(texto, girias[0]);
@@ -204,26 +207,24 @@ function analisarC1(texto, tokens, frases, resC1) {
         penalizar(resC1, CONFIG.PONTOS.PENALIDADE.LEVE, "Pontuação", "Sinais duplicados.", "Uso informal (!!).", "Use apenas um sinal.", 'baixa');
     }
 
-    // 3. Frases Longas (Lógica Melhorada)
-    // Se tiver vírgula, tolera mais. Se não tiver, tolera menos.
+    // 3. Frases Longas (Logarítmico)
     let penalidadeFraseAcumulada = 0;
     frases.forEach(f => {
         const palavras = f.split(/\s+/).length;
-        const temPontuacaoInterna = f.includes(',') || f.includes(';') || f.includes(':');
-        // Se tem vírgula, limite sobe para 60. Se não, 40.
-        const limiteReal = temPontuacaoInterna ? CONFIG.LIMITES.FRASE_LONGA_COM_PONTUACAO : CONFIG.LIMITES.FRASE_LONGA_QTD;
+        const temPontuacao = f.includes(',') || f.includes(';');
+        const limite = temPontuacao ? CONFIG.LIMITES.FRASE_LONGA_COM_PONTUACAO : CONFIG.LIMITES.FRASE_LONGA_QTD;
 
-        if (palavras > limiteReal) {
-            const excesso = Math.floor((palavras - limiteReal) / 5);
+        if (palavras > limite) {
+            const excesso = Math.floor((palavras - limite) / 5);
             penalidadeFraseAcumulada += (CONFIG.PONTOS.PENALIDADE.FRASE_LONGA_BASE * (1 + excesso));
         }
     });
     
     if (penalidadeFraseAcumulada > 0) {
-        penalizar(resC1, Math.min(50, Math.floor(penalidadeFraseAcumulada)), "Fluidez", "Frases muito extensas.", "Períodos longos dificultam a leitura.", "Divida em orações menores.", 'media');
+        penalizar(resC1, Math.min(50, Math.floor(penalidadeFraseAcumulada)), "Fluidez", "Frases muito extensas.", "Dificulta a leitura.", "Use mais pontos finais.", 'media');
     }
 
-    // 4. Repetição (Threshold Dinâmico)
+    // 4. Repetição
     const limiteRepeticao = Math.max(5, Math.floor(tokens.length * 0.015));
     const contagem = {};
     tokensNorm.forEach(t => {
@@ -233,7 +234,7 @@ function analisarC1(texto, tokens, frases, resC1) {
     let repeticoes = 0;
     let exemplo = "";
     Object.entries(contagem).forEach(([palavra, qtd]) => {
-        const ignorar = ['sobre', 'todos', 'assim', 'ainda', 'fazer', 'poder', 'sendo', 'mesmo', 'agora', 'então', 'forma', 'parte'];
+        const ignorar = ['sobre', 'todos', 'assim', 'ainda', 'fazer', 'poder', 'sendo', 'mesmo', 'agora', 'então'];
         if (qtd > limiteRepeticao && !ignorar.includes(palavra)) {
             repeticoes += (qtd - limiteRepeticao);
             exemplo = palavra;
@@ -256,7 +257,7 @@ function analisarC2(textoNorm, temaNorm, paragrafos, resC2) {
     let acertos = 0;
     tokensTema.forEach(t => { if (textoNorm.includes(t)) acertos++; });
     
-    const cobertura = acertos / tokensTema.length;
+    const cobertura = acertos / (tokensTema.length || 1); // Evita div by zero
     const isTemaCurto = tokensTema.length < 3;
 
     if (acertos === 0) {
@@ -276,16 +277,10 @@ function analisarC2(textoNorm, temaNorm, paragrafos, resC2) {
 }
 
 function analisarC3(textoLower, resC3) {
-    // Conta conectivos com Regex (Performance Cache)
-    let countConc = 0;
-    // Lista simplificada para C3 (foca nos principais)
-    ['portanto', 'logo', 'assim', 'consequentemente'].forEach(c => {
-        if(textoLower.includes(c)) countConc++;
-    });
-
+    const countExpl = LEXICO.CONECTIVOS_TRANSICAO.reduce((acc, t) => acc + contarOcorrencias(textoLower, t), 0);
     const countVerbos = LEXICO.VERBOS_CAUSA_EFEITO.reduce((acc, t) => acc + contarOcorrencias(textoLower, t), 0);
 
-    const forcaArgumentativa = (countConc * 1.5) + (countVerbos * 0.8);
+    const forcaArgumentativa = (countExpl * 0.5) + (countVerbos * 0.8);
 
     if (forcaArgumentativa < 3) {
         penalizar(resC3, 40, "Argumentação", "Falta aprofundamento.", "Argumentos expositivos.", "Use 'pois', 'visto que' ou verbos de impacto.", 'alta');
@@ -293,14 +288,12 @@ function analisarC3(textoLower, resC3) {
         penalizar(resC3, 20, "Desenvolvimento", "Argumentação tímida.", "Ideias pouco exploradas.", "Detalhe mais consequências.", 'media');
     }
 
-    // Repertório
     const temAutoridade = CACHE.AUTORIDADE_REGEX.test(textoLower);
     const temGenerico = contemTermo(textoLower, LEXICO.REPERTORIO_GENERICO);
 
     if (!temAutoridade && !temGenerico) {
         penalizar(resC3, 60, "Repertório", "Sem repertório externo.", "Texto baseado no senso comum.", "Cite dados, leis ou autores.", 'alta');
     } else if (temAutoridade) {
-        // Bônus seguro (teto 200)
         resC3.nota = Math.min(200, resC3.nota + CONFIG.PONTOS.BONUS.AUTORIDADE);
     }
     
@@ -316,14 +309,12 @@ function analisarC4(textoLower, tokens, paragrafos, resC4) {
     });
 
     LEXICO.REFERENCIAS.forEach(ref => {
-        // Regex simples para refs
-        const regex = new RegExp(`\\b${ref}\\b`, 'gi');
-        const matches = textoLower.match(regex);
-        if(matches) totalCoesivos += (matches.length * 0.6);
+        const qtd = contarOcorrencias(textoLower, ref);
+        totalCoesivos += (qtd * 0.6);
     });
 
     const densidadeAlvo = Math.min(0.04, Math.max(0.02, tokens.length * 0.0001)); 
-    const densidadeAtual = totalCoesivos / tokens.length;
+    const densidadeAtual = totalCoesivos / (tokens.length || 1);
 
     if (densidadeAtual < densidadeAlvo) {
         penalizar(resC4, 60, "Coesão", "Texto desconexo.", "Baixa densidade de elementos de ligação.", "Use mais conectivos.", 'alta');
@@ -383,62 +374,81 @@ function analisarC5(paragrafos, resC5) {
 }
 
 // =================================================================
-// 🚀 MAIN ENGINE
+// 🚀 MAIN ENGINE (ANTI-CRASH)
 // =================================================================
 
 function corrigirRedacao(texto, tema) {
-    const resultado = {
-        notaFinal: 0,
-        competencias: {
-            c1: { nome: "Norma Culta", nota: 200, erros: [] },
-            c2: { nome: "Tema e Estrutura", nota: 200, erros: [] },
-            c3: { nome: "Argumentação", nota: 200, erros: [] },
-            c4: { nome: "Coesão", nota: 200, erros: [] },
-            c5: { nome: "Proposta de Intervenção", nota: 0, erros: [] }
-        },
-        analiseGeral: []
-    };
+    // BLINDAGEM: Try/Catch para nunca derrubar o servidor
+    try {
+        const resultado = {
+            notaFinal: 0,
+            competencias: {
+                c1: { nome: "Norma Culta", nota: 200, erros: [] },
+                c2: { nome: "Tema e Estrutura", nota: 200, erros: [] },
+                c3: { nome: "Argumentação", nota: 200, erros: [] },
+                c4: { nome: "Coesão", nota: 200, erros: [] },
+                c5: { nome: "Proposta de Intervenção", nota: 0, erros: [] }
+            },
+            analiseGeral: []
+        };
 
-    const textoLimpo = texto.trim();
-    
-    if (!textoLimpo || textoLimpo.split(/\s+/).length < CONFIG.LIMITES.MIN_PALAVRAS) {
-        zerarNotas(resultado);
-        resultado.analiseGeral.push("🚨 Texto muito curto. Escreva pelo menos 50 palavras.");
+        // Validação de Input
+        if (typeof texto !== 'string' || !texto) {
+            return { sucesso: false, erro: "Texto inválido ou vazio." };
+        }
+
+        const textoLimpo = texto.trim();
+        if (textoLimpo.split(/\s+/).length < CONFIG.LIMITES.MIN_PALAVRAS) {
+            zerarNotas(resultado);
+            resultado.analiseGeral.push("🚨 Texto muito curto. Escreva pelo menos 50 palavras.");
+            return resultado;
+        }
+
+        // Processamento
+        const textoLower = normalizar(textoLimpo);
+        const paragrafos = textoLimpo.split(/\n+/).filter(p => p.trim().length > 0);
+        const frases = textoLimpo.match(/[^.?!]+[.?!]+|[^.?!]+$/g) || [];
+        const tokens = tokenizar(textoLimpo); 
+        const temaNorm = tema ? normalizar(tema) : "livre";
+
+        // Anti-Spam
+        const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
+        const ratio = uniqueTokens.size / (tokens.length || 1);
+        const minVocabDinamico = Math.max(0.15, CONFIG.LIMITES.MIN_VOCABULARIO_UNICO - (50 / (tokens.length || 1)));
+        
+        if (ratio < minVocabDinamico) {
+            zerarNotas(resultado);
+            resultado.analiseGeral.push("🚨 SPAM DETECTADO: Repetição excessiva de palavras.");
+            return resultado;
+        }
+        if (detectarRepeticaoFrases(frases)) {
+            zerarNotas(resultado);
+            resultado.analiseGeral.push("🚨 SPAM DETECTADO: Frases duplicadas.");
+            return resultado;
+        }
+
+        // Análises
+        analisarC1(textoLimpo, tokens, frases, resultado.competencias.c1);
+        analisarC2(textoLower, temaNorm, paragrafos, resultado.competencias.c2);
+        analisarC3(textoLower, resultado.competencias.c3);
+        analisarC4(textoLower, tokens, paragrafos, resultado.competencias.c4);
+        analisarC5(paragrafos, resultado.competencias.c5);
+
+        // Soma Final
+        resultado.notaFinal = Object.values(resultado.competencias).reduce((acc, c) => acc + c.nota, 0);
+        resultado.notaFinal = Math.min(1000, Math.max(0, resultado.notaFinal));
+
         return resultado;
+
+    } catch (e) {
+        console.error("Erro interno no corretor:", e);
+        return {
+            sucesso: false,
+            notaFinal: 0,
+            competencias: {},
+            analiseGeral: ["Erro ao processar texto. Tente novamente."]
+        };
     }
-
-    const textoLower = normalizar(textoLimpo);
-    const paragrafos = textoLimpo.split(/\n+/).filter(p => p.trim().length > 0);
-    const frases = textoLimpo.match(/[^.?!]+[.?!]+|[^.?!]+$/g) || [];
-    const tokens = tokenizar(textoLimpo); 
-    const temaNorm = normalizar(tema);
-
-    const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
-    const ratio = uniqueTokens.size / tokens.length;
-    // Cálculo seguro do mínimo dinâmico
-    const minVocabDinamico = Math.max(0.15, CONFIG.LIMITES.MIN_VOCABULARIO_UNICO - (50 / tokens.length));
-    
-    if (ratio < minVocabDinamico) {
-        zerarNotas(resultado);
-        resultado.analiseGeral.push("🚨 SPAM: Repetição excessiva de palavras.");
-        return resultado;
-    }
-    if (detectarRepeticaoFrases(frases)) {
-        zerarNotas(resultado);
-        resultado.analiseGeral.push("🚨 SPAM: Frases duplicadas.");
-        return resultado;
-    }
-
-    analisarC1(textoLimpo, tokens, frases, resultado.competencias.c1);
-    analisarC2(textoLower, temaNorm, paragrafos, resultado.competencias.c2);
-    analisarC3(textoLower, resultado.competencias.c3);
-    analisarC4(textoLower, tokens, paragrafos, resultado.competencias.c4);
-    analisarC5(paragrafos, resultado.competencias.c5);
-
-    resultado.notaFinal = Object.values(resultado.competencias).reduce((acc, c) => acc + c.nota, 0);
-    resultado.notaFinal = Math.min(1000, Math.max(0, resultado.notaFinal));
-
-    return resultado;
 }
 
 module.exports = { corrigirRedacao };
