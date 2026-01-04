@@ -1,27 +1,33 @@
-/* frontend/assets/css/style.css */
-
-/* --- VARIÁVEIS GLOBAIS (Design System) --- */
+/* ==========================================================================
+   1. VARIÁVEIS GLOBAIS & RESET (Design System)
+   ========================================================================== */
 :root {
+    /* Paleta de Cores */
     --primary: #4F46E5;       /* Indigo Principal */
     --primary-hover: #4338ca;
     --secondary: #EC4899;     /* Rosa Detalhes */
+    
     --bg: #F3F4F6;           /* Fundo Cinza Claro */
     --surface: #ffffff;      /* Fundo Branco */
+    
     --text-main: #111827;    /* Texto Escuro */
     --text-muted: #6B7280;   /* Texto Cinza */
+    
     --border: #E5E7EB;       /* Bordas */
+    
+    /* Feedback Colors */
     --success: #10B981;      /* Verde */
     --warning: #F59E0B;      /* Amarelo */
     --danger: #EF4444;       /* Vermelho */
+    
+    /* Sombras & Fontes */
     --font-stack: 'Inter', system-ui, -apple-system, sans-serif;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
-/* --- RESET BÁSICO --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: var(--font-stack);
@@ -31,14 +37,17 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-a { text-decoration: none; color: inherit; }
-button { font-family: inherit; }
+a { text-decoration: none; color: inherit; transition: 0.2s; }
+button { font-family: inherit; cursor: pointer; }
 
-/* --- COMPONENTES GERAIS --- */
+/* ==========================================================================
+   2. COMPONENTES GERAIS (Navbar, Botões, Containers)
+   ========================================================================== */
 
 /* Navbar */
 nav {
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
     padding: 16px 24px;
     display: flex;
@@ -47,7 +56,6 @@ nav {
     position: sticky;
     top: 0;
     z-index: 50;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
 .logo {
@@ -73,7 +81,7 @@ nav {
     padding: 20px;
 }
 
-/* Botões Padrão */
+/* Botões */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -83,18 +91,23 @@ nav {
     color: white;
     font-weight: 600;
     border: none;
-    border-radius: 8px;
-    cursor: pointer;
+    border-radius: 10px;
     transition: all 0.2s;
     font-size: 1rem;
+    box-shadow: var(--shadow-sm);
 }
 
-.btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
-.btn:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; }
+.btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; opacity: 0.7; }
+
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
 .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #EEF2FF; }
 
-/* Cards (Dashboard & Ferramentas) */
+/* ==========================================================================
+   3. PÁGINA DASHBOARD (index.html)
+   ========================================================================== */
+
+/* Ferramentas Grid */
 .tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -103,11 +116,11 @@ nav {
 
 .tool-card {
     background: var(--surface);
-    padding: 24px;
-    border-radius: 16px;
+    padding: 30px;
+    border-radius: 20px;
     cursor: pointer;
     transition: all 0.2s;
-    border: 2px solid transparent;
+    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -117,14 +130,21 @@ nav {
 .tool-card:hover {
     transform: translateY(-4px);
     border-color: var(--primary);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
 }
 
-.tool-icon { font-size: 2.5rem; margin-bottom: 16px; display: block; }
+.tool-icon { 
+    font-size: 2.5rem; 
+    margin-bottom: 20px; 
+    background: #EEF2FF; 
+    width: 64px; height: 64px; 
+    display: flex; align-items: center; justify-content: center; 
+    border-radius: 12px; 
+}
 .tool-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; }
 .tool-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; }
 
-/* Stats (Estatísticas) */
+/* Estatísticas */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -134,116 +154,18 @@ nav {
 
 .stat-card {
     background: var(--surface);
-    padding: 20px;
-    border-radius: 12px;
+    padding: 24px;
+    border-radius: 16px;
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
 }
 
-.stat-val { font-size: 2rem; font-weight: 800; color: var(--text-main); }
-.stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+.stat-val { font-size: 2.2rem; font-weight: 800; color: var(--text-main); line-height: 1; margin-bottom: 5px; }
+.stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-/* --- EDITOR DE REDAÇÃO --- */
-.editor-box {
-    width: 100%;
-    max-width: 800px;
-    background: var(--surface);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.editor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.timer-badge {
-    background: #EEF2FF;
-    color: var(--primary);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-family: monospace;
-    font-weight: 700;
-    font-size: 1.1rem;
-}
-
-textarea.main-input {
-    width: 100%;
-    height: 60vh;
-    padding: 20px;
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    resize: none;
-    font-family: var(--font-stack);
-    outline: none;
-    transition: border 0.2s;
-}
-
-textarea.main-input:focus { border-color: var(--primary); }
-
-.counters { text-align: right; color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; margin-bottom: 20px; }
-
-/* --- RESULTADOS & FEEDBACK --- */
-.results-container {
-    display: none;
-    width: 100%;
-    max-width: 800px;
-    margin-top: 40px;
-    padding-bottom: 50px;
-}
-
-.score-hero {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.score-hero .val { font-size: 4rem; font-weight: 900; line-height: 1; color: var(--text-main); }
-.score-hero .label { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; }
-
-.comp-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 16px;
-}
-
-.comp-header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.progress-track {
-    background: var(--bg);
-    height: 8px;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 15px;
-}
-
-.progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-
-.feedback-item {
-    background: #FEF2F2;
-    border-left: 4px solid var(--danger);
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 0 4px 4px 0;
-    font-size: 0.9rem;
-}
-
-.feedback-item strong { display: block; color: #991B1B; margin-bottom: 4px; }
-.feedback-item small { display: block; color: var(--success); font-weight: 600; margin-top: 4px; }
-
-/* --- MODAL --- */
+/* Modal de Tema */
 .modal-overlay {
     display: none;
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -256,10 +178,11 @@ textarea.main-input:focus { border-color: var(--primary); }
 .modal-content {
     background: var(--surface);
     padding: 30px;
-    border-radius: 16px;
+    border-radius: 20px;
     width: 90%;
     max-width: 450px;
     animation: slideUp 0.3s ease;
+    box-shadow: var(--shadow-lg);
 }
 
 .modal-option {
@@ -267,7 +190,7 @@ textarea.main-input:focus { border-color: var(--primary); }
     padding: 16px;
     margin: 8px 0;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--surface);
     text-align: left;
     cursor: pointer;
@@ -277,16 +200,188 @@ textarea.main-input:focus { border-color: var(--primary); }
     transition: 0.2s;
 }
 
-.modal-option:hover { border-color: var(--primary); background: #EEF2FF; }
+.modal-option:hover { border-color: var(--primary); background: #EEF2FF; transform: scale(1.02); }
 
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* ==========================================================================
+   4. PÁGINA EDITOR (redacao.html)
+   ========================================================================== */
+
+.editor-box {
+    width: 100%;
+    max-width: 900px;
+    background: var(--surface);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
 }
 
-/* --- MOBILE --- */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.timer-badge {
+    background: #EEF2FF;
+    color: var(--primary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+textarea.main-input {
+    width: 100%;
+    height: 60vh;
+    padding: 24px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 1.15rem;
+    line-height: 1.7;
+    resize: none;
+    font-family: 'Georgia', serif; /* Melhor para leitura longa */
+    outline: none;
+    transition: border 0.2s;
+    color: #374151;
+}
+
+textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+
+.counters { text-align: right; color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; margin-bottom: 20px; }
+
+/* ==========================================================================
+   5. RESULTADOS & FEEDBACK
+   ========================================================================== */
+
+.results-container {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 40px;
+    padding-bottom: 60px;
+    animation: slideUp 0.5s ease;
+}
+
+.grid-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+/* Nota Gigante */
+.score-hero {
+    background: var(--surface);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    text-align: center;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.score-hero .val { font-size: 5rem; font-weight: 900; line-height: 1; color: var(--primary); letter-spacing: -3px; }
+.score-hero .label { color: var(--text-muted); font-weight: 600; margin-top: 10px; }
+
+/* Box do Gráfico Radar */
+.chart-box {
+    background: var(--surface);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Cards das Competências */
+.comp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.comp-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.progress-track {
+    background: #F3F4F6;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.progress-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+
+/* Itens de Feedback */
+.feedback-item {
+    background: #FEF2F2;
+    border-left: 4px solid var(--danger);
+    padding: 16px;
+    margin-top: 12px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.95rem;
+}
+
+.feedback-item strong { display: block; color: #991B1B; margin-bottom: 6px; font-weight: 700; }
+.feedback-item small { 
+    display: inline-block; 
+    color: #065F46; 
+    font-weight: 600; 
+    margin-top: 8px; 
+    background: #D1FAE5; 
+    padding: 4px 8px; 
+    border-radius: 6px; 
+    font-size: 0.85rem; 
+}
+
+/* ==========================================================================
+   6. LOADING OVERLAY (Hacker Style)
+   ========================================================================== */
+.loading-overlay {
+    display: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.95);
+    z-index: 200;
+    backdrop-filter: blur(5px);
+    align-items: center; justify-content: center; flex-direction: column;
+}
+
+.loader {
+    width: 60px; height: 60px;
+    border: 6px solid #EEF2FF;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+.loading-text {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 1.2rem;
+    animation: pulse 1.5s infinite;
+}
+
+/* ==========================================================================
+   7. ANIMAÇÕES GERAIS
+   ========================================================================== */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Mobile Adaptations */
 @media (max-width: 768px) {
     .container { margin: 20px auto; }
     textarea.main-input { height: 50vh; }
-    .score-hero .val { font-size: 3rem; }
+    .score-hero .val { font-size: 4rem; }
+    .grid-results { grid-template-columns: 1fr; }
 }
