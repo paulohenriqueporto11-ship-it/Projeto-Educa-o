@@ -12,11 +12,10 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <audio id="audio-rain" loop src="https://cdn.pixabay.com/download/audio/2022/05/17/audio_38363a01ea.mp3?filename=heavy-rain-19365.mp3"></audio>
-    <audio id="audio-lofi" loop src="https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc8c4592b2.mp3?filename=chill-lofi-song-8444.mp3"></audio>
-    <audio id="audio-white" loop src="https://cdn.pixabay.com/download/audio/2021/08/09/audio_8ed024765d.mp3?filename=white-noise-8117.mp3"></audio>
+    <audio id="audio-rain" loop src="https://actions.google.com/sounds/v1/weather/heavy_rain.ogg"></audio>
+    <audio id="audio-lofi" loop src="https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"></audio> <audio id="audio-white" loop src="https://actions.google.com/sounds/v1/water/air_conditioner_hum.ogg"></audio>
 
-    <div id="configModal" class="modal-overlay" style="display:flex;"> 
+    <div id="configModal" class="modal-overlay" style="display:none;"> 
         <div class="modal-box">
             <h2>🚀 Seu Cronograma</h2>
             <p style="color:var(--text-muted); margin-bottom:20px;">O que vamos destruir hoje?</p>
@@ -47,7 +46,7 @@
                 <input type="range" min="0.5" max="8" step="0.5" value="2" id="hoursInput" oninput="updateHoursLabel(this.value)">
             </div>
 
-            <button class="btn-save" onclick="saveConfig()">Gerar Missões</button>
+            <button class="btn-save" onclick="saveConfig()">Salvar & Gerar</button>
         </div>
     </div>
 
@@ -59,7 +58,7 @@
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container page-cronograma">
         
         <div class="timer-deck">
             <h3 style="margin-bottom:20px; opacity:0.8">Modo Foco Profundo</h3>
@@ -82,7 +81,7 @@
 
             <div class="sound-bar">
                 <button class="sound-btn" id="btn-rain" onclick="toggleAudio('rain')">🌧 Chuva</button>
-                <button class="sound-btn" id="btn-lofi" onclick="toggleAudio('lofi')">☕ Lo-Fi</button>
+                <button class="sound-btn" id="btn-lofi" onclick="toggleAudio('lofi')">☕ Music</button>
                 <button class="sound-btn" id="btn-white" onclick="toggleAudio('white')">📻 Ruído</button>
             </div>
         </div>
@@ -98,66 +97,141 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO E DADOS ---
-        let state = {
-            track: 'custom',
+        // ===========================================
+        // 1. GESTÃO DE ESTADO (Persistência)
+        // ===========================================
+        
+        // Tenta carregar do LocalStorage, senão usa padrão
+        const savedData = localStorage.getItem('estudaia_v3_state');
+        
+        let state = savedData ? JSON.parse(savedData) : {
+            firstVisit: true,        // Controla se o modal abre sozinho
+            track: 'med',            // Valor padrão seguro
             customSubjects: [],
-            goalMinutes: 120, // 2 horas padrao
+            goalMinutes: 120,
             elapsedSeconds: 0,
             isRunning: false,
-            completed: []
+            completed: []            // IDs das missões completas
         };
-        
-        let timerInterval = null;
-        let currentAudio = null;
 
-        // BANCO DE QUESTÕES COM LINKS REAIS (INTERNOS)
+        // Reset Diário (Se virou o dia, limpa as missões feitas, mas mantém a config)
+        const todayKey = new Date().toLocaleDateString();
+        if (state.lastDate !== todayKey) {
+            state.completed = []; // Reseta conclusões
+            state.elapsedSeconds = 0; // Reseta timer
+            state.lastDate = todayKey;
+            saveState(); // Salva o reset
+        }
+
+        function saveState() {
+            localStorage.setItem('estudaia_v3_state', JSON.stringify(state));
+        }
+
+        // ===========================================
+        // 2. BANCO DE QUESTÕES
+        // ===========================================
         const DB = {
             mat: { t: "Matemática", d: "Lista: Geometria Plana", xp: 150, i: "📐", url: "simulados.html?materia=matematica" },
             red: { t: "Redação", d: "Escrever: Tema da Semana", xp: 300, i: "📝", url: "redacao.html" },
             nat: { t: "Natureza", d: "Revisão: Estequiometria", xp: 150, i: "🧪", url: "simulados.html?materia=natureza" },
             hum: { t: "Humanas", d: "Quiz: Revolução Industrial", xp: 100, i: "🏺", url: "simulados.html?materia=humanas" },
-            // Presets
+            
+            // Presets (Trilhas prontas)
             med: ['nat', 'nat', 'red', 'mat'],
             eng: ['mat', 'mat', 'nat', 'red'],
             hum: ['hum', 'hum', 'red', 'mat']
         };
 
-        // --- 2. LOGICA DO MODAL ---
-        function openConfig() { document.getElementById('configModal').style.display = 'flex'; }
+        // ===========================================
+        // 3. INICIALIZAÇÃO INTELIGENTE
+        // ===========================================
+        
+        window.onload = function() {
+            if (state.firstVisit) {
+                // Se é a 1ª vez, abre o modal
+                openConfig();
+            } else {
+                // Se já configurou, carrega direto
+                renderMissions();
+                updateDisplay(); // Restaura o visual do timer
+                updateHoursLabel(state.goalMinutes / 60);
+            }
+        };
+
+        // ===========================================
+        // 4. LÓGICA DO MODAL
+        // ===========================================
+        
+        function openConfig() { 
+            document.getElementById('configModal').style.display = 'flex'; 
+            
+            // Restaura visualmente a escolha salva
+            const savedTrack = state.track || 'med';
+            const opts = document.querySelectorAll('.track-option');
+            opts.forEach(el => {
+                if(el.textContent.toLowerCase().includes(savedTrack === 'custom' ? 'personalizado' : savedTrack)) {
+                    // Simples match de texto para UI
+                    selectTrack(el, savedTrack);
+                }
+            });
+            
+            // Restaura o slider
+            document.getElementById('hoursInput').value = state.goalMinutes / 60;
+            updateHoursLabel(state.goalMinutes / 60);
+        }
         
         function selectTrack(el, type) {
             document.querySelectorAll('.track-option').forEach(e => e.classList.remove('selected'));
             el.classList.add('selected');
-            state.track = type;
             
             // Mostra area personalizada se for custom
             document.getElementById('customArea').style.display = (type === 'custom') ? 'block' : 'none';
+            
+            // Não salvamos no state ainda, só quando clicar em SALVAR
+            el.dataset.tempType = type; 
         }
 
         function toggleSubject(btn, subj) {
             btn.classList.toggle('selected');
-            if(state.customSubjects.includes(subj)) {
-                state.customSubjects = state.customSubjects.filter(s => s !== subj);
-            } else {
-                state.customSubjects.push(subj);
-            }
+            // Lógica visual apenas, salvamos no final
         }
 
         function updateHoursLabel(val) {
             const h = Math.floor(val);
             const m = (val % 1) * 60;
             document.getElementById('hoursVal').innerText = `${h}h ${m===0?'00':m}m`;
-            state.goalMinutes = val * 60;
         }
 
         function saveConfig() {
+            // 1. Pega o tipo selecionado
+            const selectedOpt = document.querySelector('.track-option.selected');
+            const type = selectedOpt ? (selectedOpt.dataset.tempType || selectedOpt.getAttribute('onclick').split("'")[1]) : 'med';
+            
+            state.track = type;
+            state.firstVisit = false; // Nunca mais abre sozinho
+            
+            // 2. Se for custom, pega as matérias
+            if (type === 'custom') {
+                const selectedChips = document.querySelectorAll('.subject-chip.selected');
+                state.customSubjects = Array.from(selectedChips).map(c => c.getAttribute('onclick').split("'")[1]);
+                if(state.customSubjects.length === 0) state.customSubjects = ['mat', 'red']; // Fallback
+            }
+
+            // 3. Pega o tempo
+            const val = document.getElementById('hoursInput').value;
+            state.goalMinutes = val * 60;
+
+            saveState(); // Persiste
+            
             document.getElementById('configModal').style.display = 'none';
             renderMissions();
-            resetTimer(); // Reseta timer pra nova meta
+            resetTimer(); 
         }
 
-        // --- 3. GERAÇÃO DE MISSÕES ---
+        // ===========================================
+        // 5. RENDERIZAÇÃO
+        // ===========================================
+        
         function renderMissions() {
             const list = document.getElementById('missionsList');
             list.innerHTML = '';
@@ -165,7 +239,7 @@
             let subjectsToLoad = [];
             
             if (state.track === 'custom') {
-                subjectsToLoad = state.customSubjects.length > 0 ? state.customSubjects : ['red', 'mat']; // Fallback
+                subjectsToLoad = state.customSubjects.length > 0 ? state.customSubjects : ['red', 'mat'];
             } else {
                 subjectsToLoad = DB[state.track] || DB['med'];
             }
@@ -174,11 +248,9 @@
                 const missionData = DB[key] || DB['mat'];
                 const isDone = state.completed.includes(idx);
                 
-                // CRIAÇÃO DO CARD
                 const div = document.createElement('div');
                 div.className = `mission-card ${isDone ? 'mission-done' : ''}`;
                 
-                // Botão agora é um LINK <a> REAL
                 div.innerHTML = `
                     <div class="mission-left">
                         <div class="mission-icon">${missionData.i}</div>
@@ -195,30 +267,41 @@
                 list.appendChild(div);
             });
 
-            document.getElementById('trackTitle').innerText = state.track === 'custom' ? 'Seu Plano Personalizado' : 'Plano de Estudos';
+            const titles = { med: 'Foco Saúde', eng: 'Foco Exatas', hum: 'Foco Humanas', custom: 'Personalizado' };
+            document.getElementById('trackTitle').innerText = titles[state.track] || 'Cronograma';
         }
 
         function markAsDone(idx) {
             if(!state.completed.includes(idx)) {
                 state.completed.push(idx);
-                // Aqui você pode salvar no localStorage se quiser
+                saveState();
+                
+                // Efeito Confete
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                
+                // Pequeno delay para recarregar visual (opcional)
+                setTimeout(() => renderMissions(), 500);
             }
         }
 
-        // --- 4. TIMER REFEITO ---
+        // ===========================================
+        // 6. TIMER & AUDIO
+        // ===========================================
+        
+        let timerInterval = null;
+        let currentAudio = null;
+
         function toggleTimer() {
             const btn = document.getElementById('playBtn');
             const status = document.getElementById('timerStatus');
 
             if (state.isRunning) {
-                // PAUSAR
                 clearInterval(timerInterval);
                 state.isRunning = false;
                 btn.innerText = "▶ CONTINUAR";
                 btn.style.background = "#4F46E5";
                 status.innerText = "Pausado";
             } else {
-                // INICIAR
                 state.isRunning = true;
                 btn.innerText = "⏸ PAUSAR";
                 btn.style.background = "#F59E0B";
@@ -226,15 +309,19 @@
                 
                 timerInterval = setInterval(() => {
                     state.elapsedSeconds++;
+                    if(state.elapsedSeconds % 5 === 0) saveState(); // Salva a cada 5s
                     updateDisplay();
                 }, 1000);
             }
+            saveState();
         }
 
         function resetTimer() {
             clearInterval(timerInterval);
             state.isRunning = false;
             state.elapsedSeconds = 0;
+            saveState();
+            
             document.getElementById('playBtn').innerText = "▶ INICIAR";
             document.getElementById('playBtn').style.background = "#10B981";
             document.getElementById('timerStatus').innerText = "Pronto?";
@@ -254,7 +341,6 @@
             document.getElementById('displayTimer').innerText = timeString;
             document.getElementById('navTimer').innerText = timeString;
 
-            // Barra Circular
             const totalGoalSeconds = state.goalMinutes * 60;
             let percent = (state.elapsedSeconds / totalGoalSeconds) * 100;
             if (percent > 100) percent = 100;
@@ -263,30 +349,43 @@
                 `conic-gradient(#10B981 ${percent}%, rgba(255,255,255,0.1) 0%)`;
         }
 
-        // --- 5. SISTEMA DE ÁUDIO ---
         function toggleAudio(type) {
             const audioEl = document.getElementById(`audio-${type}`);
             const btn = document.getElementById(`btn-${type}`);
 
+            // Pausa o atual se clicar no mesmo
             if (currentAudio === type) {
                 audioEl.pause();
                 currentAudio = null;
                 btn.classList.remove('playing');
-            } else {
-                ['rain', 'lofi', 'white'].forEach(t => {
-                    document.getElementById(`audio-${t}`).pause();
-                    document.getElementById(`btn-${t}`).classList.remove('playing');
-                });
+                return;
+            }
 
-                audioEl.volume = 0.5;
-                audioEl.play().catch(e => console.log("Erro ao tocar áudio:", e));
-                currentAudio = type;
-                btn.classList.add('playing');
+            // Reseta todos os outros
+            ['rain', 'lofi', 'white'].forEach(t => {
+                const el = document.getElementById(`audio-${t}`);
+                const b = document.getElementById(`btn-${t}`);
+                el.pause();
+                el.currentTime = 0; // Volta para o começo
+                b.classList.remove('playing');
+            });
+
+            // Toca o novo
+            audioEl.volume = 0.6;
+            const playPromise = audioEl.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    // Play funcionou
+                    currentAudio = type;
+                    btn.classList.add('playing');
+                })
+                .catch(error => {
+                    console.log("Erro de Autoplay (Interaja com a página primeiro):", error);
+                    alert("Clique na página antes de dar play no som!");
+                });
             }
         }
-
-        // Inicialização
-        selectTrack(document.querySelector('.track-option'), 'med'); 
     </script>
 </body>
 </html>
