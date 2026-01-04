@@ -17,7 +17,7 @@ const CONFIG = {
         },
         BONUS: {
             VOCABULARIO: 20,
-            ELEMENTO_C5: 40 // 5 elementos = 200 pontos
+            ELEMENTO_C5: 40
         }
     },
     LIMITES: {
@@ -26,7 +26,7 @@ const CONFIG = {
         FRASE_LONGA_QTD: 60,
         MAX_REPETICAO_CONECTIVO: 4,
         MIN_PARAGRAFOS: 3,
-        TAMANHO_DETALHAMENTO: 80 // Reduzi para ser mais flexível
+        TAMANHO_DETALHAMENTO: 80
     }
 };
 
@@ -34,22 +34,18 @@ const CONFIG = {
 // 📚 LÉXICO & DADOS
 // =================================================================
 const LEXICO = {
-    // C1 & C3
     ORALIDADE: ['vc', 'pq', 'tb', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'coisa', 'negócio', 'tipo', 'aí', 'então', 'daí', 'né', 'ta', 'tá', 'blz', 'so'],
     VOCABULARIO_RICO: ['imprescindível', 'intrínseco', 'corroborar', 'paradigma', 'utopia', 'efêmero', 'mitigar', 'exacerbar', 'viés', 'conjuntura', 'preponderante', 'inexorável', 'fomento', 'alicerce', 'consoante', 'premissa', 'análogo', 'dissonância', 'inerente', 'fundamental', 'crucial', 'consolidar', 'assegurar', 'democratização', 'segregação', 'articular'],
     MARCAS_OPINIAO: ['fundamental', 'imprescindível', 'urgente', 'notório', 'grave', 'deve-se', 'precisa-se', 'defende-se', 'acredita-se', 'observa-se', 'inaceitável', 'crucial', 'lastimável', 'preocupante', 'indispensável', 'necessário', 'evidente', 'inadmissível'],
     CLICHES: ['hoje em dia', 'nos dias de hoje', 'desde os primórdios', 'a cada dia que passa', 'com certeza', 'no mundo atual', 'atualmente', 'desde sempre'],
     
-    // Coesão
     CONECTIVOS_TRANSICAO: [
         'portanto', 'entretanto', 'contudo', 'todavia', 'além', 'visto', 'dessa forma', 'em suma', 'consequentemente', 'nesse sentido', 'sob esse viés', 'diante disso', 'outrossim', 'adicionando', 'em contrapartida', 'assim', 'logo', 'primeiramente', 'ademais', 'por fim', 'em síntese', 'dessa maneira', 'outro fator', 'vale ressaltar', 'historicamente', 'consequentemente', 'no brasil', 'por outro lado'
     ],
     CONECTIVOS_CONCLUSAO_FORTE: ['portanto', 'em suma', 'concluindo', 'em síntese', 'dessa forma', 'assim', 'logo'],
     
-    // Repertório
     REPERTORIO: ['segundo', 'de acordo', 'conforme', 'ibge', 'oms', 'onu', 'constituição', 'lei', 'artigo', 'filósofo', 'sociólogo', 'pensador', 'obra', 'livro', 'filme', 'série', 'documentário', 'dados', 'estatística', 'pesquisa', 'estudo', 'universidade', 'ciência', 'história', 'guerra', 'revolução', 'cenário', 'panorama', 'literatura', 'notícia', 'reportagem'],
     
-    // Intervenção (Léxico Expandido)
     C5_ELEMENTOS: [
         { chave: 'AGENTE', msg: 'Faltou AGENTE (Quem?)', termos: ['governo', 'estado', 'ministério', 'escola', 'mídia', 'sociedade', 'família', 'ongs', 'poder público', 'legislativo', 'executivo', 'cabe ao', 'cabe à', 'indivíduo', 'cidadão', 'iniciativa', 'parcerias', 'instituições', 'entidades', 'gestores'] },
         { chave: 'ACAO', msg: 'Faltou AÇÃO (O quê?)', termos: ['deve', 'precisa', 'necessita', 'cabe a', 'promover', 'criar', 'fiscalizar', 'investir', 'implementar', 'fomentar', 'realizar', 'garantir', 'desenvolver', 'elaborar', 'instituir', 'viabilizar', 'atuar', 'assegurar', 'fortalecimento', 'estimular', 'articulem', 'reduzir'] },
@@ -127,19 +123,26 @@ function detectarRepeticaoFrases(frases) {
     });
 }
 
+// ⚠️ NOVA FUNÇÃO: Zera tudo se der ruim
+function zerarNotas(resultado) {
+    resultado.notaFinal = 0;
+    Object.keys(resultado.competencias).forEach(k => {
+        resultado.competencias[k].nota = 0;
+        resultado.competencias[k].erros = []; // Limpa erros anteriores
+    });
+}
+
 // =================================================================
 // 🧠 MÓDULOS DE COMPETÊNCIA
 // =================================================================
 
 function analisarC1(texto, textoLower, tokens, frases, resC1) {
-    // 1. Oralidade
     const oralidadesEncontradas = tokens.filter(t => CACHE.SETS.ORALIDADE.has(t));
     if (oralidadesEncontradas.length > 0) {
         const exemplo = [...new Set(oralidadesEncontradas)].slice(0, 3).join(', ');
         penalizar(resC1, CONFIG.PONTOS.PENALIDADE.LEVE, "Oralidade", "Termos informais.", `Ex: ${exemplo}`, "Substitua por linguagem formal.");
     }
 
-    // 2. Pontuação e Gramática
     const check = (regex, pontos, tipo, desc, ex, acao) => {
         if (regex.test(texto)) penalizar(resC1, pontos, tipo, desc, ex, acao);
     };
@@ -152,16 +155,14 @@ function analisarC1(texto, textoLower, tokens, frases, resC1) {
     check(CACHE.REGEX.CRASE_ERRO, CONFIG.PONTOS.PENALIDADE.MEDIA, "Crase", "Crase indevida.", "Antes de masculino/verbo.", "Remova a crase.");
     check(CACHE.REGEX.MIM_CONJUGA, CONFIG.PONTOS.PENALIDADE.MEDIA, "Gramática", "'Mim' conjuga verbo.", "'Para mim ir'", "Use 'Para eu ir'.");
 
-    // 3. Frases Longas
     let frasesLongas = 0;
     frases.forEach(f => {
         if ((f.match(/\s/g) || []).length > CONFIG.LIMITES.FRASE_LONGA_QTD) frasesLongas++;
     });
-    if (frasesLongas > 3) { // Tolerância aumentada para textos complexos
+    if (frasesLongas > 3) {
         penalizar(resC1, CONFIG.PONTOS.PENALIDADE.FRASE_LONGA * (frasesLongas - 3), "Fluidez", "Períodos muito longos.", `${frasesLongas} frases extensas.`, "Use mais pontos finais.");
     }
 
-    // 4. Bônus Vocabulário
     const ricasCount = tokens.reduce((acc, t) => acc + (CACHE.SETS.VOCABULARIO_RICO.has(t) ? 1 : 0), 0);
     if (ricasCount >= 3 && resC1.nota < CONFIG.PONTOS.MAX) {
         bonificar(resC1, CONFIG.PONTOS.BONUS.VOCABULARIO);
@@ -169,7 +170,6 @@ function analisarC1(texto, textoLower, tokens, frases, resC1) {
 }
 
 function analisarC2(textoLower, tema, paragrafos, totalPalavras, resC2) {
-    // 1. Tema
     if (tema && tema !== "Livre") {
         const stopWords = new Set(['a', 'o', 'e', 'do', 'da', 'de', 'em', 'para', 'com', 'que', 'um', 'uma', 'os', 'as', 'no', 'na']);
         const tokensTema = tokenizar(tema).filter(t => t.length > 3 && !stopWords.has(t));
@@ -183,23 +183,17 @@ function analisarC2(textoLower, tema, paragrafos, totalPalavras, resC2) {
         }
     }
 
-    // 2. Estrutura Dinâmica
     const numParagrafos = paragrafos.length;
-    
-    // Monobloco
     if (numParagrafos === 1 && totalPalavras > 100) {
-        penalizar(resC2, CONFIG.PONTOS.PENALIDADE.GRAVE, "Estrutura", "Texto em Monobloco.", "Apenas 1 parágrafo.", "Divida em parágrafos.");
+        penalizar(resC2, CONFIG.PONTOS.PENALIDADE.GRAVE, "Estrutura Visual", "Texto em Monobloco.", "Apenas 1 parágrafo.", "Divida em parágrafos.");
     } else {
         if (numParagrafos < CONFIG.LIMITES.MIN_PARAGRAFOS) {
             penalizar(resC2, CONFIG.PONTOS.PENALIDADE.FATAL, "Estrutura", "Texto insuficiente.", "Menos de 3 parágrafos.", "Siga a estrutura dissertativa.");
         } 
-        // Limite dinâmico: Se texto longo, aceita mais parágrafos
         const maxParagrafos = totalPalavras > 400 ? 10 : 6;
         if (numParagrafos > maxParagrafos) {
             penalizar(resC2, CONFIG.PONTOS.PENALIDADE.LEVE, "Estrutura", "Fragmentação.", "Muitos parágrafos curtos.", "Tente agrupar ideias.");
         }
-
-        // Tese
         const textoIntro = paragrafos.slice(0, 2).join(" ");
         const tokensIntro = tokenizar(textoIntro);
         if (!contemPalavra(tokensIntro, CACHE.SETS.MARCAS_OPINIAO)) {
@@ -211,7 +205,6 @@ function analisarC2(textoLower, tema, paragrafos, totalPalavras, resC2) {
 function analisarC3(textoLower, resC3) {
     const explicativos = ['porque', 'pois', 'visto', 'dado', 'haja', 'virtude', 'medida'];
     const conclusivos = ['consequentemente', 'logo', 'acarreta', 'gera', 'ocasiona', 'leva', 'promove', 'implica'];
-
     const temExpl = explicativos.some(t => textoLower.includes(t));
     const temConc = conclusivos.some(t => textoLower.includes(t));
 
@@ -224,12 +217,10 @@ function analisarC3(textoLower, resC3) {
 }
 
 function analisarC4(texto, tokens, paragrafos, resC4) {
-    // 1. Variedade
     const freqMap = new Map();
     tokens.forEach(t => {
         if (CACHE.SETS.CONECTIVOS.has(t)) freqMap.set(t, (freqMap.get(t) || 0) + 1);
     });
-
     const qtdUsados = freqMap.size;
     freqMap.forEach((qtd, conectivo) => {
         if (qtd > CONFIG.LIMITES.MAX_REPETICAO_CONECTIVO) {
@@ -240,17 +231,14 @@ function analisarC4(texto, tokens, paragrafos, resC4) {
     if (qtdUsados < 2) penalizar(resC4, 80, "Coesão", "Texto desconexo.", "Poucos conectivos.", "Use conectivos.");
     else if (qtdUsados < 4) penalizar(resC4, 40, "Coesão", "Baixa variedade.", "Repertório limitado.", "Varie mais.");
 
-    // 2. Coesão Interparágrafos
     if (paragrafos.length > 2) {
         let conexoesInter = 0;
         const checkParagrafos = paragrafos.slice(1);
-        
         checkParagrafos.forEach((p, idx) => {
-            // Olha as primeiras 20 palavras (tolerância maior para frases introdutórias)
-            const inicioPara = tokenizar(p).slice(0, 20); 
-            if (contemPalavra(inicioPara, CACHE.SETS.CONECTIVOS)) conexoesInter++;
+            const inicioPara = tokenizar(p).slice(0, 15); 
+            const temConectivo = inicioPara.some(t => CACHE.SETS.CONECTIVOS.has(t));
+            if (temConectivo) conexoesInter++;
         });
-
         if (conexoesInter < (checkParagrafos.length / 2)) {
             penalizar(resC4, 40, "Coesão Interparágrafos", "Conexão fraca.", "Inícios sem conectivos.", "Ligue os parágrafos com termos de transição.");
         }
@@ -259,17 +247,11 @@ function analisarC4(texto, tokens, paragrafos, resC4) {
 
 function analisarC5(paragrafos, resC5) {
     resC5.nota = 0;
-    
-    // ESTRATÉGIA "BEST MATCH": Analisa TODOS os parágrafos e pega a maior nota C5 encontrada.
-    // Isso resolve o problema de propostas no meio do texto.
-    
     let melhorNota = 0;
     let melhorFeedback = [];
     
     paragrafos.forEach((p, idx) => {
-        // Pula parágrafos muito curtos que não sejam o final
         if (p.length < 50 && idx !== paragrafos.length -1) return;
-
         const textoPara = normalizar(p);
         let elementos = 0;
         let errosTemp = [];
@@ -283,7 +265,6 @@ function analisarC5(paragrafos, resC5) {
             }
         });
 
-        // Detalhamento
         const temExplicacao = /\b(pois|visto|ou seja|isto é|sentido de|capaz de)\b/.test(textoPara);
         if (textoPara.length > CONFIG.LIMITES.TAMANHO_DETALHAMENTO && (temExplicacao || elementos >= 4)) {
             elementos++;
@@ -292,24 +273,18 @@ function analisarC5(paragrafos, resC5) {
         }
 
         let notaTemp = elementos * CONFIG.PONTOS.BONUS.ELEMENTO_C5;
-
-        // Genéricos (Penalidade Suave)
         if (/\b(conscientizar|palestra)\b/.test(textoPara)) {
             errosTemp.push({ tipo: "Qualidade", descricao: "Intervenção Genérica.", exemplo: "Evite 'conscientizar'.", acao: "Proponha ações concretas." });
-            notaTemp -= 20; // Tira 20 pontos, não trava mais
+            notaTemp -= 20; 
         }
 
-        // Se encontrou uma proposta melhor neste parágrafo, atualiza
         if (notaTemp > melhorNota) {
             melhorNota = notaTemp;
             melhorFeedback = errosTemp;
         }
     });
 
-    // Aplica a melhor nota encontrada no texto inteiro
     resC5.nota = clamp(melhorNota);
-    
-    // Se a nota não foi máxima, exibe os erros da melhor tentativa (para o aluno corrigir o que faltou nela)
     if (resC5.nota < 200) {
         if (melhorFeedback.length > 0) {
             melhorFeedback.forEach(e => {
@@ -339,8 +314,11 @@ function corrigirRedacao(texto, tema) {
     };
 
     const textoLimpo = texto.trim();
+    
+    // ⚠️ CHECK DE TEXTO VAZIO OU CURTO (Retorna ZERO imediatamente)
     if (!textoLimpo || textoLimpo.split(/\s+/).length < CONFIG.LIMITES.MIN_PALAVRAS) {
-        resultado.analiseGeral.push("🚨 Texto muito curto.");
+        zerarNotas(resultado);
+        resultado.analiseGeral.push("🚨 Texto muito curto ou insuficiente. Escreva pelo menos 50 palavras.");
         return resultado;
     }
 
@@ -350,18 +328,20 @@ function corrigirRedacao(texto, tema) {
     const tokens = tokenizar(textoLimpo); 
     const totalPalavras = tokens.length;
 
-    // Segurança
+    // ⚠️ CHECK DE SPAM (Zera tudo imediatamente)
     const uniqueTokens = new Set(tokens);
     if ((uniqueTokens.size / totalPalavras) < CONFIG.LIMITES.MIN_VOCABULARIO_UNICO) {
-        resultado.analiseGeral.push("🚨 SPAM: Repetição excessiva.");
+        zerarNotas(resultado); // Zera antes de retornar
+        resultado.analiseGeral.push("🚨 DETECÇÃO DE SPAM: Repetição excessiva de palavras.");
         return resultado;
     }
     if (detectarRepeticaoFrases(frases)) {
-        resultado.analiseGeral.push("🚨 SPAM: Loop de frases.");
+        zerarNotas(resultado); // Zera antes de retornar
+        resultado.analiseGeral.push("🚨 DETECÇÃO DE SPAM: Loop de frases idênticas detectado.");
         return resultado;
     }
 
-    // Execução
+    // Execução (Se passou pelos filtros)
     analisarC1(textoLimpo, textoLower, tokens, frases, resultado.competencias.c1);
     analisarC2(textoLower, tema, paragrafos, totalPalavras, resultado.competencias.c2);
     analisarC3(textoLower, resultado.competencias.c3);
