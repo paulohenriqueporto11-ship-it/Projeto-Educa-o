@@ -1,77 +1,51 @@
-// src/server.js
 const express = require('express');
 const cors = require('cors');
-const { enviarRedacao } = require('./controllers/redacaoController');
+// Importa as duas funções do controller
+const { enviarRedacao, obterEstatisticas } = require('./controllers/redacaoController');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ==================================================================
-// 🛡️ SISTEMA DE SEGURANÇA (RATE LIMITER MANUAL)
-// ==================================================================
-// Isso impede que um aluno trave o servidor mandando mil redações
+// --- SEGURANÇA (Rate Limiter) ---
 const requestCounts = new Map();
-
 const rateLimiter = (req, res, next) => {
-    // Pega o IP do aluno (funciona mesmo no Render/Proxies)
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    
-    // Configuração: Máximo 10 tentativas a cada 1 minuto por aluno
-    const WINDOW_MS = 60 * 1000; // 1 minuto
-    const MAX_REQUESTS = 3;
+    const WINDOW_MS = 60 * 1000; 
+    const MAX_REQUESTS = 15; // Aumentei um pouco para testes
 
     const now = Date.now();
+    if (!requestCounts.has(ip)) requestCounts.set(ip, []);
     
-    if (!requestCounts.has(ip)) {
-        requestCounts.set(ip, []);
+    const timestamps = requestCounts.get(ip).filter(time => now - time < WINDOW_MS);
+    
+    if (timestamps.length >= MAX_REQUESTS) {
+        return res.status(429).json({ erro: "Muitas requisições. Aguarde 1 minuto." });
     }
 
-    const timestamps = requestCounts.get(ip);
-    
-    // Remove registros antigos (mais velhos que 1 minuto)
-    const timestampsRecentes = timestamps.filter(time => now - time < WINDOW_MS);
-    
-    if (timestampsRecentes.length >= MAX_REQUESTS) {
-        // SE O ALUNO EXAGERAR: O servidor rejeita e protege a memória
-        return res.status(429).json({ 
-            erro: "✋ Calma! Você enviou muitas requisições. Espere 1 minuto." 
-        });
-    }
-
-    // Se estiver tudo ok, adiciona o timestamp atual e libera
-    timestampsRecentes.push(now);
-    requestCounts.set(ip, timestampsRecentes);
-    
-    next(); // Passa para a correção
+    timestamps.push(now);
+    requestCounts.set(ip, timestamps);
+    next();
 };
 
-// Limpeza automática da memória do Rate Limiter a cada 10 mins
-setInterval(() => {
-    requestCounts.clear();
-}, 10 * 60 * 1000);
+// Limpeza de memória
+setInterval(() => requestCounts.clear(), 10 * 60 * 1000);
 
-// ==================================================================
-// 🚀 CONFIGURAÇÕES DO SERVIDOR
-// ==================================================================
+// --- CONFIGURAÇÃO DO SERVIDOR ---
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
 
-app.use(cors()); // Libera acesso do Frontend
-app.use(express.json({ limit: '1mb' })); // Protege contra textos gigantescos (>1MB)
-
-// Rota de Teste (Ping)
-app.get('/', (req, res) => {
-    res.send('🛡️ API Redação 7.0 (Protected) - Online');
-});
-
-// Rota Principal (Com o porteiro de segurança ativado)
+// Rotas
+app.get('/', (req, res) => res.send('API Redação Online 🚀'));
 app.post('/api/enviar-redacao', rateLimiter, enviarRedacao);
+app.get('/api/estatisticas', obterEstatisticas); // NOVA ROTA
 
-// Tratamento de Erro Global (Pra não crashar nunca)
+// Tratamento de erro
 app.use((err, req, res, next) => {
-    console.error("Erro não tratado capturado:", err);
-    res.status(500).json({ erro: "Erro interno no servidor, mas não caí!" });
+    console.error(err);
+    res.status(500).json({ erro: "Erro interno do servidor." });
 });
 
 app.listen(port, () => {
-    console.log(`✅ Servidor Blindado rodando na porta ${port}`);
+    console.log(`Servidor rodando na porta ${port}`);
 });
