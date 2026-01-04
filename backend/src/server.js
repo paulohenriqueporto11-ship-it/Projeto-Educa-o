@@ -1,21 +1,21 @@
 const express = require('express');
 const cors = require('cors');
-// Importa Controllers existentes
-const { enviarRedacao, obterEstatisticas } = require('./controllers/redacaoController');
-// NOVO: Importa Controller do Cronograma (vamos criar no passo 2)
-const cronogramaController = require('./controllers/cronogramaController');
-
 require('dotenv').config();
+
+// Importa as Rotas Modulares
+const redacaoRoutes = require('./routes/redacaoRoutes');
+const cronogramaRoutes = require('./routes/cronogramaRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// --- SEGURANÇA (Rate Limiter) ---
+// --- SEGURANÇA (Rate Limiter Global) ---
+// É melhor definir aqui e usar globalmente ou passar como middleware
 const requestCounts = new Map();
 const rateLimiter = (req, res, next) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const WINDOW_MS = 60 * 1000; 
-    const MAX_REQUESTS = 20; // Aumentei um pouco para comportar as requests do cronograma
+    const MAX_REQUESTS = 30; // Ajustado para uso global
 
     const now = Date.now();
     if (!requestCounts.has(ip)) requestCounts.set(ip, []);
@@ -23,7 +23,7 @@ const rateLimiter = (req, res, next) => {
     const timestamps = requestCounts.get(ip).filter(time => now - time < WINDOW_MS);
     
     if (timestamps.length >= MAX_REQUESTS) {
-        return res.status(429).json({ erro: "Muitas requisições. Aguarde 1 minuto." });
+        return res.status(429).json({ erro: "Muitas requisições. Aguarde." });
     }
 
     timestamps.push(now);
@@ -31,42 +31,26 @@ const rateLimiter = (req, res, next) => {
     next();
 };
 
-// Limpeza de memória
 setInterval(() => requestCounts.clear(), 10 * 60 * 1000);
 
-// --- CONFIGURAÇÃO DO SERVIDOR ---
+// --- MIDDLEWARES GLOBAIS ---
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+app.use(rateLimiter); // Aplica o limitador em TODAS as rotas abaixo
 
-// --- ROTAS ---
-
-// Rota de Teste
+// --- DEFINIÇÃO DE ROTAS ---
 app.get('/', (req, res) => res.send('API Estuda.IA Online 🚀'));
 
-// 1. Rotas de Redação (Já existiam)
-app.post('/api/enviar-redacao', rateLimiter, enviarRedacao);
-app.get('/api/estatisticas', obterEstatisticas);
+// Aqui a mágica acontece: O server "monta" os prefixos
+app.use('/api', redacaoRoutes); // As rotas de redação ficarão em /api/enviar-redacao
+app.use('/api/cronograma', cronogramaRoutes); // As rotas ficarão em /api/cronograma/dados, etc.
 
-// 2. NOVAS ROTAS DE CRONOGRAMA
-// Pega todos os dados do usuário (XP, Streak, Histórico) ao abrir o site
-app.get('/api/cronograma/dados', rateLimiter, cronogramaController.getDadosUsuario);
-
-// Salva quando o aluno completa uma missão
-app.post('/api/cronograma/concluir', rateLimiter, cronogramaController.concluirMissao);
-
-// Salva as configurações (Matérias, Intensidade)
-app.post('/api/cronograma/config', rateLimiter, cronogramaController.salvarConfig);
-
-// (Opcional) Registra missão bônus
-app.post('/api/cronograma/bonus', rateLimiter, cronogramaController.registrarBonus);
-
-
-// Tratamento de erro global
+// Tratamento de erro
 app.use((err, req, res, next) => {
     console.error(err);
     res.status(500).json({ erro: "Erro interno do servidor." });
 });
 
 app.listen(port, () => {
-    console.log(`Servidor rodando na porta ${port}`);
+    console.log(`Servidor limpo rodando na porta ${port}`);
 });
