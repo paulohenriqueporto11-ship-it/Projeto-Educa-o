@@ -2,20 +2,19 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// Importa as Rotas Modulares
-const redacaoRoutes = require('./routes/redacaoRoutes');
-const cronogramaRoutes = require('./routes/cronogramaRoutes');
+// IMPORTANTE: Adicionei o .js no final para garantir que o Linux encontre
+const redacaoRoutes = require('./routes/redacaoRoutes.js');
+const cronogramaRoutes = require('./routes/cronogramaRoutes.js');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // --- SEGURANÇA (Rate Limiter Global) ---
-// É melhor definir aqui e usar globalmente ou passar como middleware
 const requestCounts = new Map();
 const rateLimiter = (req, res, next) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const WINDOW_MS = 60 * 1000; 
-    const MAX_REQUESTS = 30; // Ajustado para uso global
+    const MAX_REQUESTS = 30; 
 
     const now = Date.now();
     if (!requestCounts.has(ip)) requestCounts.set(ip, []);
@@ -31,26 +30,36 @@ const rateLimiter = (req, res, next) => {
     next();
 };
 
+// Limpa memória do Rate Limiter a cada 10 min
 setInterval(() => requestCounts.clear(), 10 * 60 * 1000);
 
-// --- MIDDLEWARES GLOBAIS ---
+// --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
-app.use(rateLimiter); // Aplica o limitador em TODAS as rotas abaixo
+app.use(rateLimiter); 
 
-// --- DEFINIÇÃO DE ROTAS ---
+// --- ROTAS ---
 app.get('/', (req, res) => res.send('API Estuda.IA Online 🚀'));
 
-// Aqui a mágica acontece: O server "monta" os prefixos
-app.use('/api', redacaoRoutes); // As rotas de redação ficarão em /api/enviar-redacao
-app.use('/api/cronograma', cronogramaRoutes); // As rotas ficarão em /api/cronograma/dados, etc.
+// Rotas de Redação (Prefixo /api)
+// Ex: POST /api/enviar-redacao
+app.use('/api', redacaoRoutes); 
 
-// Tratamento de erro
+// Rotas de Cronograma (Prefixo /api/cronograma)
+// Ex: GET /api/cronograma/dados
+app.use('/api/cronograma', cronogramaRoutes); 
+
+// Tratamento de erro 404 (Rota não encontrada)
+app.use((req, res) => {
+    res.status(404).json({ erro: "Rota não encontrada" });
+});
+
+// Tratamento de erro Global (500)
 app.use((err, req, res, next) => {
-    console.error(err);
+    console.error("ERRO NO SERVIDOR:", err);
     res.status(500).json({ erro: "Erro interno do servidor." });
 });
 
 app.listen(port, () => {
-    console.log(`Servidor limpo rodando na porta ${port}`);
+    console.log(`Servidor rodando na porta ${port}`);
 });
