@@ -535,7 +535,34 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 }
 
 /* ==========================================================================
-   13. ANIMAÇÕES & RESPONSIVIDADE
+   13. NOVO: TIMER DE ESTUDOS & AJUSTES FINAIS
+   ========================================================================== */
+
+/* Timer na Navbar */
+.nav-right { display: flex; align-items: center; gap: 15px; }
+
+.study-timer {
+    background: #111827; color: #fff; padding: 6px 12px;
+    border-radius: 8px; font-family: monospace; font-weight: 700;
+    font-size: 1rem; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.study-timer::before { content: '⏱️'; font-size: 0.9rem; }
+
+/* Card Personalizado (Destaque) */
+.focus-card.custom-mode {
+    border-style: dashed; background: #fff;
+}
+.focus-card.custom-mode:hover {
+    background: #EEF2FF; border-style: solid;
+}
+
+/* Esconder/Mostrar Seções do Modal */
+.modal-section { display: none; }
+.modal-section.active { display: block; animation: slideUp 0.3s ease; }
+/* ==========================================================================
+   14. ANIMAÇÕES & RESPONSIVIDADE
    ========================================================================== */
 
 @keyframes spin { to { transform: rotate(360deg); } }
