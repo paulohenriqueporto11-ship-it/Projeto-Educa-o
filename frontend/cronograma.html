@@ -3,357 +3,487 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Rotina - Estuda.IA</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4F46E5">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <title>Minha Rotina - Estuda.IA 2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338ca;
+            --bg: #F3F4F6;
+            --card: #FFFFFF;
+            --text: #1F2937;
+            --text-muted: #6B7280;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 80px; }
+
+        /* HEADER & TIMER */
+        header {
+            background: var(--card);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
+
+        /* DASHBOARD PRINCIPAL */
+        .container { max-width: 600px; margin: 20px auto; padding: 0 20px; }
+
+        /* NOVO CRONÔMETRO DECK */
+        .timer-deck {
+            background: linear-gradient(135deg, #1e1b4b, #312e81);
+            color: white;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-ring {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(var(--success) 0%, rgba(255,255,255,0.1) 0%);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+            transition: background 1s linear;
+        }
+        
+        .timer-inner {
+            width: 130px;
+            height: 130px;
+            background: #1e1b4b;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .timer-display { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .timer-label { font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px; }
+
+        .timer-controls { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        
+        .btn-timer {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn-play { background: var(--success); color: white; padding: 10px 30px; font-size: 1.1rem; }
+        .btn-stop { background: rgba(255,255,255,0.1); color: white; }
+        .btn-timer:active { transform: scale(0.95); }
+
+        /* SOUND BAR (Surpresa Útil) */
+        .sound-bar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sound-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #a5b4fc;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .sound-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* MISSÕES */
+        .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; }
+        .section-title { font-size: 1.1rem; font-weight: 700; }
+        
+        .mission-card {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s;
+        }
+        .mission-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .mission-card.done { opacity: 0.6; background: #f9fafb; }
+        
+        .m-icon { font-size: 1.5rem; background: #e0e7ff; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+        .m-content { flex: 1; }
+        .m-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; }
+        .m-desc { font-size: 0.8rem; color: var(--text-muted); }
+        .m-xp { font-size: 0.75rem; font-weight: 700; color: var(--primary); background: #e0e7ff; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+
+        .btn-check {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            background: transparent;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; color: white;
+        }
+        .mission-card.done .btn-check { background: var(--success); border-color: var(--success); }
+
+        /* MODAL DE CONFIGURAÇÃO (Cronograma) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-box {
+            background: white; width: 90%; max-width: 500px;
+            padding: 25px; border-radius: 20px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from {transform: translateY(20px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+
+        .track-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .track-option {
+            border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px;
+            text-align: center; cursor: pointer; transition: 0.2s;
+        }
+        .track-option:hover { border-color: var(--primary); background: #f5f3ff; }
+        .track-option.selected { border-color: var(--primary); background: #e0e7ff; color: var(--primary-dark); font-weight: 700; }
+        
+        .slider-container { margin: 20px 0; }
+        .slider-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 600; }
+        input[type=range] { width: 100%; accent-color: var(--primary); }
+
+        .btn-save { background: var(--primary); color: white; width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 1rem; }
+    </style>
 </head>
 <body>
 
-    <div id="statsModal" class="stats-overlay">
-        <div class="stats-box">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                <h2>📊 Seu Desempenho</h2>
-                <button class="btn-outline" style="border:none; color:white; font-size:1.5rem;" onclick="closeStats()">×</button>
-            </div>
+    <div id="configModal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 style="margin-bottom:5px;">🚀 Planeje sua Aprovação</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Personalize sua experiência de estudos.</p>
 
-            <div class="big-stats-grid">
-                <div class="big-stat">
-                    <div class="big-val" id="statTotalMissions">0</div>
-                    <div class="big-label">Missões Concluídas</div>
-                </div>
-                <div class="big-stat">
-                    <div class="big-val" id="statTotalDays">0</div>
-                    <div class="big-label">Dias Estudados</div>
-                </div>
-                <div class="big-stat">
-                    <div class="big-val" id="statMaxStreak">0</div>
-                    <div class="big-label">Maior Ofensiva</div>
+            <div style="margin-top:20px;">
+                <label style="font-weight:600; font-size:0.9rem;">Qual é o seu foco?</label>
+                <div class="track-grid" id="trackSelector">
+                    <div class="track-option" onclick="selectTrack(this, 'med')">🩺 Saúde<br><span style="font-size:0.7rem; font-weight:400">Bio & Quim</span></div>
+                    <div class="track-option" onclick="selectTrack(this, 'eng')">📐 Exatas<br><span style="font-size:0.7rem; font-weight:400">Mat & Fís</span></div>
+                    <div class="track-option" onclick="selectTrack(this, 'hum')">⚖️ Humanas<br><span style="font-size:0.7rem; font-weight:400">Hist & Geo</span></div>
+                    <div class="track-option" onclick="selectTrack(this, 'all')">📚 Geral<br><span style="font-size:0.7rem; font-weight:400">Enem Padrão</span></div>
                 </div>
             </div>
 
-            <h3 style="color:#9CA3AF; font-size:0.9rem; text-transform:uppercase; margin-bottom:10px;">Consistência (Últimos 3 Meses)</h3>
-            <div class="heatmap-container">
-                <div class="heatmap-grid" id="heatmap"></div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Meta Diária</span>
+                    <span id="hoursVal" style="color:var(--primary)">4h 00m</span>
+                </div>
+                <input type="range" min="1" max="10" step="0.5" value="4" id="hoursInput" oninput="updateHoursLabel(this.value)">
+                <p style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Isso definirá seu cronômetro e a quantidade de tarefas.</p>
             </div>
-            
-            <div style="margin-top:20px; display:flex; gap:10px; font-size:0.8rem; color:#9CA3AF; align-items:center;">
-                <span>Menos</span>
-                <div class="day-square" data-level="0"></div>
-                <div class="day-square" data-level="1"></div>
-                <div class="day-square" data-level="2"></div>
-                <div class="day-square" data-level="3"></div>
-                <span>Mais</span>
-            </div>
+
+            <button class="btn-save" onclick="saveConfig()">Salvar Cronograma</button>
         </div>
     </div>
 
-    <nav>
+    <header>
         <div class="logo">✨ Estuda.IA</div>
-        <div style="display:flex; align-items:center; gap:15px;">
-            <div class="study-timer" id="globalTimer">00:00:00</div>
-            <button class="btn-outline" style="border:none; font-size:1.2rem;" onclick="openStats()">📊</button>
-            <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Sair</a>
-        </div>
-    </nav>
+        <div style="font-size:0.9rem; font-weight:600; color:var(--text-muted)" onclick="openConfig()">⚙️ Ajustar</div>
+    </header>
 
     <div class="container">
         
-        <div class="level-container">
-            <div class="level-badge" id="userLevel">1</div>
-            <div class="xp-bar-wrapper">
-                <div class="xp-info">
-                    <span>Nível <span id="lvlNum">1</span></span>
-                    <span id="xpDisplay">0 / 1000 XP</span>
+        <div class="timer-deck">
+            <div class="timer-ring" id="timerRing">
+                <div class="timer-inner">
+                    <div class="timer-display" id="displayTimer">00:00</div>
+                    <div class="timer-label" id="timerLabel">Focar</div>
                 </div>
-                <div class="xp-track">
-                    <div class="xp-fill" id="xpBar" style="width: 0%"></div>
-                </div>
+            </div>
+            
+            <div class="timer-controls">
+                <button class="btn-timer btn-stop" onclick="resetTimer()">⏹</button>
+                <button class="btn-timer btn-play" id="playBtn" onclick="toggleTimer()">▶ Iniciar</button>
+            </div>
+
+            <div class="sound-bar">
+                <div class="sound-btn" onclick="toggleSound(this, 'rain')">🌧 Chuva</div>
+                <div class="sound-btn" onclick="toggleSound(this, 'lofi')">☕ Lo-Fi</div>
+                <div class="sound-btn" onclick="toggleSound(this, 'white')">📻 White</div>
+            </div>
+            <p style="font-size:0.7rem; margin-top:10px; opacity:0.7">Sons para bloquear distrações</p>
+        </div>
+
+        <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h3 id="trackTitle">Cronograma Geral</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted)">Progresso diário: <span id="progressText">0%</span></p>
             </div>
             <div style="text-align:right;">
-                <div style="font-size:0.8rem; opacity:0.8">Ofensiva</div>
-                <div style="font-weight:800; color:#F59E0B">🔥 <span id="streakDay">0</span> dias</div>
+                <div style="font-weight:800; color:#F59E0B; font-size:1.2rem;">🔥 5</div>
+                <div style="font-size:0.7rem; color:var(--text-muted)">Dias seguidos</div>
             </div>
         </div>
 
-        <div class="view-toggle">
-            <div class="toggle-btn active" id="viewDaily" onclick="switchView('daily')">Missões de Hoje</div>
-            <div class="toggle-btn" id="viewWeekly" onclick="switchView('weekly')">Visão Semanal</div>
-        </div>
-
-        <div id="dailyContainer">
-            <div id="missionsList"></div>
-            
-            <div id="bonusContainer" style="display:none; text-align:center; margin-top:30px; padding-top:20px; border-top:1px dashed var(--border);">
-                <p style="color:var(--text-muted); margin-bottom:15px;">Você completou tudo por hoje! Que tal um desafio extra?</p>
-                <button class="btn" style="background: linear-gradient(135deg, #4F46E5, #9333EA);" onclick="generateBonusMission()">
-                    💎 Gerar Missão Bônus (+300 XP)
-                </button>
+        <div id="missionsList">
             </div>
-        </div>
-
-        <div id="weeklyContainer" style="display: none;">
-            <div class="weekly-grid" id="weeklyGrid"></div>
-        </div>
 
     </div>
 
     <script>
-        // =========================================================
-        // 1. DADOS & ESTADO
-        // =========================================================
-        const CONSTANTS = { XP_PER_LEVEL: 1000 };
-        
-        // Simulação de "Banco de Missões Bônus"
-        const BONUS_POOL = [
-            { t: "Desafio de Lógica", d: "Resolva 1 problema difícil de análise combinatória.", i: "🧠", url: "simulados.html", type: "Matemática" },
-            { t: "Repertório Flash", d: "Leia sobre 1 filósofo novo em 10min.", i: "⚡", url: "redacao.html" },
-            { t: "Inglês Rápido", d: "Traduza o refrão de uma música.", i: "🎵", url: "simulados.html", type: "Linguagens" }
-        ];
-
-        let state = JSON.parse(localStorage.getItem('estudaia_state_v4')) || {
-            config: { subjects: ['red', 'mat'], intensity: 'medio' },
-            user: { xp: 0, streak: 1, lastLogin: null },
-            dailyPlan: { date: null, missions: [], bonusAdded: false },
-            history: {} // '2023-10-27': ['id1', 'id2']
+        // ============================
+        // 1. ESTADO & CONFIG
+        // ============================
+        let state = JSON.parse(localStorage.getItem('estudaia_v2_state')) || {
+            config: { track: null, goalHours: 4 }, // Track: med, eng, hum, all
+            today: new Date().toLocaleDateString(),
+            completedMissions: [],
+            elapsedSeconds: 0
         };
 
-        const todayDate = new Date().toISOString().split('T')[0];
-
-        function saveState() {
-            localStorage.setItem('estudaia_state_v4', JSON.stringify(state));
-        }
-
-        // =========================================================
-        // 2. GERAÇÃO DE MISSÕES (Normal & Bônus)
-        // =========================================================
-        function checkAndGenerateDailyMissions() {
-            // Se mudou o dia, reseta
-            if (state.dailyPlan.date !== todayDate) {
-                // Lógica de Streak: Se pulou mais de 1 dia, zera (exceto primeiro uso)
-                if (state.user.lastLogin) {
-                    const diff = (new Date(todayDate) - new Date(state.user.lastLogin)) / (1000 * 3600 * 24);
-                    if (diff >= 2) state.user.streak = 0; // Perdeu
-                    else if (diff >= 1) state.user.streak++; // Ganhou
-                }
-                
-                // Gera novas missões (Mockup simplificado do V3)
-                const count = state.config.intensity === 'hard' ? 5 : 3;
-                let newMissions = [];
-                for(let i=0; i<count; i++) {
-                    newMissions.push({
-                        id: `${todayDate}_${i}`,
-                        t: "Missão Diária " + (i+1),
-                        d: "Foco na matéria principal.",
-                        i: "📚",
-                        xp: 150,
-                        url: "simulados.html"
-                    });
-                }
-
-                state.dailyPlan = { date: todayDate, missions: newMissions, bonusAdded: false };
-                state.user.lastLogin = todayDate;
-                saveState();
-            }
-            renderMissionsUI();
-        }
-
-        function generateBonusMission() {
-            if(state.dailyPlan.bonusAdded) return;
-            
-            const randomBonus = BONUS_POOL[Math.floor(Math.random() * BONUS_POOL.length)];
-            const bonusMission = {
-                ...randomBonus,
-                id: `${todayDate}_bonus`,
-                isBonus: true,
-                xp: 300
-            };
-            
-            state.dailyPlan.missions.push(bonusMission);
-            state.dailyPlan.bonusAdded = true;
+        // Reset diário simples
+        if (state.today !== new Date().toLocaleDateString()) {
+            state.today = new Date().toLocaleDateString();
+            state.completedMissions = [];
+            state.elapsedSeconds = 0;
             saveState();
-            renderMissionsUI();
-            
-            // Efeito visual
-            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
         }
 
-        // =========================================================
-        // 3. UI RENDER (Cards e Lógica de Conclusão)
-        // =========================================================
-        function renderMissionsUI() {
+        let timerInterval = null;
+        let isRunning = false;
+        let selectedTrackTemp = state.config.track || 'all';
+
+        // ============================
+        // 2. LÓGICA DO MODAL (Cronograma)
+        // ============================
+        function openConfig() {
+            document.getElementById('configModal').style.display = 'flex';
+            // Pré-selecionar
+            updateHoursLabel(state.config.goalHours);
+            document.getElementById('hoursInput').value = state.config.goalHours;
+            // Highlight track
+            const opts = document.querySelectorAll('.track-option');
+            opts.forEach(o => {
+                if(o.textContent.toLowerCase().includes(getTrackName(state.config.track).toLowerCase())) 
+                   o.classList.add('selected'); // Lógica simples de UI
+            });
+        }
+
+        function selectTrack(el, trackCode) {
+            document.querySelectorAll('.track-option').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedTrackTemp = trackCode;
+        }
+
+        function updateHoursLabel(val) {
+            const h = Math.floor(val);
+            const m = (val - h) * 60;
+            document.getElementById('hoursVal').innerText = `${h}h ${m === 0 ? '00' : m}m`;
+        }
+
+        function saveConfig() {
+            state.config.track = selectedTrackTemp;
+            state.config.goalHours = parseFloat(document.getElementById('hoursInput').value);
+            saveState();
+            document.getElementById('configModal').style.display = 'none';
+            generateMissions(); // Regera baseado na nova escolha
+            renderUI();
+            updateTimerDisplay(); // Atualiza a meta do timer
+        }
+
+        // Se não tiver config, abre o modal
+        if (!state.config.track) {
+            openConfig();
+        }
+
+        // ============================
+        // 3. SISTEMA DE MISSÕES DINÂMICAS
+        // ============================
+        const MISSION_DB = {
+            med: [
+                { t: "Biologia Celular", d: "Resumo de Mitose e Meiose", xp: 200, i: "🧬" },
+                { t: "Química Orgânica", d: "Resolver 10 exercícios de Cadeias", xp: 150, i: "⚗️" },
+                { t: "Redação Saúde", d: "Tema: Desafios do SUS", xp: 300, i: "📝" }
+            ],
+            eng: [
+                { t: "Física - Mecânica", d: "Leis de Newton: 15 Questões", xp: 200, i: "🚀" },
+                { t: "Matemática Básica", d: "Revisão de Logaritmos", xp: 150, i: "📐" },
+                { t: "Lógica", d: "Desafio de Raciocínio Lógico", xp: 100, i: "🧠" }
+            ],
+            hum: [
+                { t: "História do BR", d: "Era Vargas: Mapa Mental", xp: 200, i: "📜" },
+                { t: "Filosofia", d: "Ler resumo sobre Kant", xp: 150, i: "🦉" },
+                { t: "Atualidades", d: "Ler 2 notícias sobre Geopolítica", xp: 100, i: "🌍" }
+            ],
+            all: [
+                { t: "Revisão Geral", d: "Matemática: Regra de 3", xp: 100, i: "🔢" },
+                { t: "Português", d: "Crase: Teoria e Prática", xp: 150, i: "📖" },
+                { t: "Redação", d: "Escrever introdução de tema livre", xp: 200, i: "✍️" }
+            ]
+        };
+
+        function generateMissions() {
+            // Em um app real, isso viria do backend ou seria aleatório
+            // Aqui pegamos fixo do DB baseado na escolha
+            return MISSION_DB[state.config.track] || MISSION_DB['all'];
+        }
+
+        // ============================
+        // 4. ENGINE DO TIMER
+        // ============================
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                document.getElementById('playBtn').innerHTML = "▶ Continuar";
+                document.getElementById('playBtn').style.background = "#4F46E5";
+                document.getElementById('timerLabel').innerText = "Pausado";
+            } else {
+                timerInterval = setInterval(() => {
+                    state.elapsedSeconds++;
+                    if(state.elapsedSeconds % 10 === 0) saveState(); // Salva a cada 10s
+                    updateTimerDisplay();
+                }, 1000);
+                document.getElementById('playBtn').innerHTML = "⏸ Pausar";
+                document.getElementById('playBtn').style.background = "#F59E0B";
+                document.getElementById('timerLabel').innerText = "Focando...";
+            }
+            isRunning = !isRunning;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            // Opcional: Zerar ou apenas parar? Vamos apenas parar e manter o progresso do dia.
+            document.getElementById('playBtn').innerHTML = "▶ Iniciar";
+            document.getElementById('playBtn').style.background = "#10B981";
+            document.getElementById('timerLabel').innerText = "Pronto?";
+            updateTimerDisplay(); // Mantém o display atualizado
+        }
+
+        function updateTimerDisplay() {
+            // Formata HH:MM:SS
+            const h = Math.floor(state.elapsedSeconds / 3600);
+            const m = Math.floor((state.elapsedSeconds % 3600) / 60);
+            const s = state.elapsedSeconds % 60;
+            
+            document.getElementById('displayTimer').innerText = 
+                `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+
+            // Atualiza Anel de Progresso
+            const goalSeconds = state.config.goalHours * 3600;
+            let percent = (state.elapsedSeconds / goalSeconds) * 100;
+            if(percent > 100) percent = 100;
+
+            const ring = document.getElementById('timerRing');
+            // Truque CSS para barra circular
+            ring.style.background = `conic-gradient(#10B981 ${percent}%, rgba(255,255,255,0.1) 0%)`;
+            
+            document.getElementById('progressText').innerText = Math.round(percent) + '% da meta';
+        }
+
+        // ============================
+        // 5. RENDER UI
+        // ============================
+        function renderUI() {
             const list = document.getElementById('missionsList');
-            const history = state.history[todayDate] || [];
+            const missions = generateMissions();
             let html = '';
-            let completedCount = 0;
 
-            state.dailyPlan.missions.forEach(m => {
-                const isDone = history.includes(m.id);
-                if (isDone) completedCount++;
-                
-                // Estilo especial se for bônus
-                const bonusClass = m.isBonus ? 'bonus' : '';
-                const icon = m.isBonus ? '💎' : m.i;
+            document.getElementById('trackTitle').innerText = "Cronograma: " + getTrackName(state.config.track);
 
+            missions.forEach((m, index) => {
+                const isDone = state.completedMissions.includes(index);
                 html += `
-                    <div class="mission-card ${bonusClass} ${isDone ? 'mission-done' : ''}">
-                        <div class="mission-left">
-                            <div class="mission-icon">${icon}</div>
-                            <div class="mission-info">
-                                <h3>${m.t} ${m.isBonus ? '<span style="font-size:0.7em; color:#FBBF24">★ BÔNUS</span>' : ''}</h3>
-                                <p>${m.d}</p>
-                                <span class="xp-badge">+${m.xp} XP</span>
-                            </div>
+                    <div class="mission-card ${isDone ? 'done' : ''}">
+                        <div class="m-icon">${m.i}</div>
+                        <div class="m-content">
+                            <div class="m-title">${m.t}</div>
+                            <div class="m-desc">${m.d}</div>
+                            <div class="m-xp">+${m.xp} XP</div>
                         </div>
-                        <button class="btn-start" onclick="completeMission('${m.id}', ${m.xp})">
-                            ${isDone ? 'Feito ✅' : 'Iniciar'}
+                        <button class="btn-check" onclick="toggleMission(${index})">
+                            ${isDone ? '✔' : ''}
                         </button>
                     </div>
                 `;
             });
 
             list.innerHTML = html;
-            updateGamificationUI();
+            updateTimerDisplay();
+        }
 
-            // Mostra botão de bônus se completou todas as normais e ainda não pegou bônus
-            const totalNormais = state.dailyPlan.missions.filter(m => !m.isBonus).length;
-            const normaisFeitas = state.dailyPlan.missions.filter(m => !m.isBonus && history.includes(m.id)).length;
+        function toggleMission(index) {
+            if(state.completedMissions.includes(index)) return; // Já feito
             
-            if (normaisFeitas >= totalNormais && !state.dailyPlan.bonusAdded) {
-                document.getElementById('bonusContainer').style.display = 'block';
-            } else {
-                document.getElementById('bonusContainer').style.display = 'none';
-            }
-        }
-
-        function completeMission(id, xp) {
-            if (!state.history[todayDate]) state.history[todayDate] = [];
+            state.completedMissions.push(index);
+            saveState();
+            renderUI();
             
-            if (!state.history[todayDate].includes(id)) {
-                state.history[todayDate].push(id);
-                state.user.xp += xp;
-                saveState();
-                renderMissionsUI();
-                if(id.includes('bonus')) confetti();
-            } else {
-                // Se já fez, pode navegar (simulação)
-                // window.location.href = ...
-            }
-        }
-
-        function updateGamificationUI() {
-            const xp = state.user.xp;
-            const level = Math.floor(xp / 1000) + 1;
-            document.getElementById('userLevel').innerText = level;
-            document.getElementById('lvlNum').innerText = level;
-            document.getElementById('xpDisplay').innerText = `${xp % 1000} / 1000 XP`;
-            document.getElementById('xpBar').style.width = `${(xp % 1000)/10}%`;
-            document.getElementById('streakDay').innerText = state.user.streak;
-        }
-
-        // =========================================================
-        // 4. HISTÓRICO & ESTATÍSTICAS (Heatmap Engine)
-        // =========================================================
-        function openStats() {
-            document.getElementById('statsModal').style.display = 'flex';
-            renderHeatmap();
-            calculateBigStats();
-        }
-
-        function closeStats() {
-            document.getElementById('statsModal').style.display = 'none';
-        }
-
-        function calculateBigStats() {
-            // 1. Total Missões
-            let totalMissions = 0;
-            let totalDays = 0;
-            
-            Object.values(state.history).forEach(dayList => {
-                if (dayList.length > 0) {
-                    totalMissions += dayList.length;
-                    totalDays++;
-                }
+            // Efeito visual
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
             });
-
-            document.getElementById('statTotalMissions').innerText = totalMissions;
-            document.getElementById('statTotalDays').innerText = totalDays;
-            document.getElementById('statMaxStreak').innerText = state.user.streak; // Simplificado
         }
 
-        function renderHeatmap() {
-            const container = document.getElementById('heatmap');
-            container.innerHTML = '';
-            
-            // Gera últimos 90 dias (aprox 12 semanas)
-            const today = new Date();
-            const squares = [];
-            
-            // Vamos gerar 84 dias (12 semanas * 7 dias)
-            for (let i = 83; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(today.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0];
-                
-                const count = state.history[dateStr] ? state.history[dateStr].length : 0;
-                let level = 0;
-                if (count > 0) level = 1;
-                if (count > 2) level = 2;
-                if (count > 4) level = 3;
-
-                const div = document.createElement('div');
-                div.className = 'day-square';
-                div.setAttribute('data-level', level);
-                div.title = `${dateStr}: ${count} missões`;
-                squares.push(div);
-            }
-            
-            squares.forEach(sq => container.appendChild(sq));
+        // ============================
+        // 6. UTILITÁRIOS & AUDIO
+        // ============================
+        function getTrackName(code) {
+            const map = { 'med': 'Medicina/Saúde', 'eng': 'Engenharia/Exatas', 'hum': 'Direito/Humanas', 'all': 'Geral/Enem' };
+            return map[code] || 'Geral';
         }
 
-        // =========================================================
-        // 5. INICIALIZAÇÃO
-        // =========================================================
-        // Timer Global (Persistente)
-        let totalSeconds = parseInt(localStorage.getItem('estudaia_timer')) || 0;
-        setInterval(() => {
-            totalSeconds++;
-            localStorage.setItem('estudaia_timer', totalSeconds);
-            const h = Math.floor(totalSeconds/3600).toString().padStart(2,'0');
-            const m = Math.floor((totalSeconds%3600)/60).toString().padStart(2,'0');
-            const timerEl = document.getElementById('globalTimer');
-            if(timerEl) timerEl.innerText = `${h}:${m}`;
-        }, 1000);
+        function saveState() {
+            localStorage.setItem('estudaia_v2_state', JSON.stringify(state));
+        }
 
-        function switchView(view) {
-            if(view === 'daily') {
-                document.getElementById('dailyContainer').style.display = 'block';
-                document.getElementById('weeklyContainer').style.display = 'none';
-                document.getElementById('viewDaily').classList.add('active');
-                document.getElementById('viewWeekly').classList.remove('active');
+        // Mock de Audio Player (Simulação visual e lógica)
+        let activeAudio = null;
+        function toggleSound(btn, type) {
+            // Em produção, aqui você colocaria: new Audio('assets/rain.mp3').play();
+            
+            // Reset visual
+            document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+
+            if (activeAudio === type) {
+                activeAudio = null; // Desliga
+                // audioObject.pause();
             } else {
-                document.getElementById('dailyContainer').style.display = 'none';
-                document.getElementById('weeklyContainer').style.display = 'block';
-                document.getElementById('viewDaily').classList.remove('active');
-                document.getElementById('viewWeekly').classList.add('active');
-                
-                // Gera resumo simples semanal
-                const container = document.getElementById('weeklyGrid');
-                container.innerHTML = `
-                    <div class="day-card"><div class="day-name">DOM</div><div class="day-load">-</div></div>
-                    <div class="day-card"><div class="day-name">SEG</div><div class="day-load">3 🎯</div></div>
-                    <div class="day-card"><div class="day-name">TER</div><div class="day-load">3 🎯</div></div>
-                    <div class="day-card"><div class="day-name">QUA</div><div class="day-load">3 🎯</div></div>
-                    <div class="day-card"><div class="day-name">QUI</div><div class="day-load">3 🎯</div></div>
-                    <div class="day-card"><div class="day-name">SEX</div><div class="day-load">3 🎯</div></div>
-                    <div class="day-card"><div class="day-name">SÁB</div><div class="day-load">-</div></div>
-                `;
+                btn.classList.add('active');
+                activeAudio = type;
+                // audioObject.play();
+                console.log("Tocando som: " + type);
             }
         }
 
-        checkAndGenerateDailyMissions();
+        // Inicializa
+        renderUI();
 
     </script>
 </body>
