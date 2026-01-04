@@ -173,6 +173,16 @@
             else if (score > quizPool.length / 2) msg.innerText = "Mandou bem! Continue assim.";
             else msg.innerText = "Não desanime, revise o conteúdo!";
         }
+
+        // --- AUTO-START VIA CRONOGRAMA ---
+        // Verifica se o cronograma mandou abrir algo específico
+        const autoStart = localStorage.getItem('simulado_auto_start');
+        if (autoStart) {
+            // Limpa para não rodar sempre que der F5
+            localStorage.removeItem('simulado_auto_start');
+            // Inicia o quiz automaticamente
+            startQuiz(autoStart);
+        }
     </script>
 </body>
 </html>
