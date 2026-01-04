@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma - Estuda.IA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav>
+        <div class="logo">✨ Estuda.IA</div>
+        <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Voltar</a>
+    </nav>
+
+    <div class="container">
+        
+        <div class="progress-header">
+            <div class="progress-info">
+                <h2>Jornada da Nota 1000</h2>
+                <p>Complete os módulos para dominar todas as competências do ENEM.</p>
+            </div>
+            
+            <div class="circle-chart">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#4F46E5" id="circlePath" />
+                    <text x="18" y="20.35" class="percentage" id="percentText">0%</text>
+                </svg>
+            </div>
+        </div>
+
+        <div id="modulesContainer"></div>
+
+    </div>
+
+    <script>
+        // --- DADOS DO CRONOGRAMA (Conteúdo Educacional) ---
+        const studyData = [
+            {
+                id: 1,
+                title: "Módulo 1: A Estrutura Perfeita",
+                tasks: [
+                    "Entendendo a estrutura Dissertativo-Argumentativa",
+                    "Como fazer uma Introdução (Tese + Contexto)",
+                    "Desenvolvimento: Tópico Frasal e Argumentação",
+                    "Conclusão: Os 5 elementos da Intervenção"
+                ]
+            },
+            {
+                id: 2,
+                title: "Módulo 2: Competência 1 (Gramática)",
+                tasks: [
+                    "Uso da Crase (Regras básicas e exceções)",
+                    "Concordância Verbal e Nominal",
+                    "Pontuação: Uso correto da vírgula",
+                    "Acentuação e Ortografia oficial"
+                ]
+            },
+            {
+                id: 3,
+                title: "Módulo 3: Competência 2 & 3 (Argumentação)",
+                tasks: [
+                    "Como usar Repertório Sociocultural (Alusões)",
+                    "Evitando o Tangenciamento do Tema",
+                    "Projeto de Texto: Organizando ideias",
+                    "Estratégias Argumentativas (Causa e Consequência)"
+                ]
+            },
+            {
+                id: 4,
+                title: "Módulo 4: Coesão Textual (C4)",
+                tasks: [
+                    "Conectivos de Início de Parágrafo",
+                    "Conectivos Interfrasais (Dentro das frases)",
+                    "Evitando repetição de palavras (Sinônimos)",
+                    "Operadores Argumentativos"
+                ]
+            }
+        ];
+
+        // --- LÓGICA DO APP ---
+        
+        // 1. Carregar progresso salvo
+        const savedProgress = JSON.parse(localStorage.getItem('estudaia_progress')) || {};
+
+        function renderModules() {
+            const container = document.getElementById('modulesContainer');
+            let totalTasks = 0;
+            let completedTasks = 0;
+
+            let html = '';
+
+            studyData.forEach(mod => {
+                let tasksHtml = '';
+                mod.tasks.forEach((task, index) => {
+                    const taskId = `${mod.id}_${index}`;
+                    const isChecked = savedProgress[taskId] ? 'checked' : '';
+                    if(isChecked) completedTasks++;
+                    totalTasks++;
+
+                    tasksHtml += `
+                        <div class="task-item ${isChecked ? 'completed' : ''}" id="row_${taskId}">
+                            <input type="checkbox" class="custom-checkbox" id="${taskId}" ${isChecked} onchange="toggleTask('${taskId}')">
+                            <label for="${taskId}" class="task-label">${task}</label>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div class="module-card">
+                        <div class="module-header">
+                            <span class="module-title">
+                                ${savedProgress[`mod_${mod.id}_done`] ? '✅' : '📚'} ${mod.title}
+                            </span>
+                            <span class="module-badge">${mod.tasks.length} Aulas</span>
+                        </div>
+                        <div class="task-list">
+                            ${tasksHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            updateChart(completedTasks, totalTasks);
+        }
+
+        function toggleTask(id) {
+            // Salva estado
+            const checkbox = document.getElementById(id);
+            if (checkbox.checked) {
+                savedProgress[id] = true;
+                document.getElementById(`row_${id}`).classList.add('completed');
+            } else {
+                delete savedProgress[id];
+                document.getElementById(`row_${id}`).classList.remove('completed');
+            }
+            
+            localStorage.setItem('estudaia_progress', JSON.stringify(savedProgress));
+            
+            // Recalcula gráfico sem recarregar tudo
+            let total = document.querySelectorAll('.custom-checkbox').length;
+            let checked = document.querySelectorAll('.custom-checkbox:checked').length;
+            updateChart(checked, total);
+        }
+
+        function updateChart(completed, total) {
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+            
+            // Animação do SVG
+            const circle = document.getElementById('circlePath');
+            const text = document.getElementById('percentText');
+            
+            // Stroke Dasharray: "value, 100"
+            circle.setAttribute('stroke-dasharray', `${percent}, 100`);
+            text.textContent = `${percent}%`;
+            
+            // Muda cor se completou tudo
+            if(percent === 100) circle.setAttribute('stroke', '#10B981');
+            else circle.setAttribute('stroke', '#4F46E5');
+        }
+
+        // Inicializa
+        renderModules();
+
+    </script>
+</body>
+</html>
