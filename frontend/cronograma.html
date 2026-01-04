@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Rotina - Estuda.IA 2.0</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="assets/css/style.css">
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -12,7 +16,8 @@
     <audio id="audio-lofi" loop src="https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc8c4592b2.mp3?filename=chill-lofi-song-8444.mp3"></audio>
     <audio id="audio-white" loop src="https://cdn.pixabay.com/download/audio/2021/08/09/audio_8ed024765d.mp3?filename=white-noise-8117.mp3"></audio>
 
-    <div id="configModal" class="modal-overlay" style="display:flex;"> <div class="modal-box">
+    <div id="configModal" class="modal-overlay" style="display:flex;"> 
+        <div class="modal-box">
             <h2>🚀 Seu Cronograma</h2>
             <p style="color:var(--text-muted); margin-bottom:20px;">O que vamos destruir hoje?</p>
 
@@ -55,6 +60,7 @@
     </nav>
 
     <div class="container">
+        
         <div class="timer-deck">
             <h3 style="margin-bottom:20px; opacity:0.8">Modo Foco Profundo</h3>
             
@@ -69,6 +75,10 @@
                 <button class="btn-timer btn-stop" onclick="resetTimer()">⏹ Reset</button>
                 <button class="btn-timer btn-play" id="playBtn" onclick="toggleTimer()">▶ INICIAR</button>
             </div>
+
+            <a href="#" onclick="openConfig(); return false;" class="timer-config-link">
+                ⚙️ Ajustar Tempo e Matéria
+            </a>
 
             <div class="sound-bar">
                 <button class="sound-btn" id="btn-rain" onclick="toggleAudio('rain')">🌧 Chuva</button>
@@ -161,12 +171,14 @@
             }
 
             subjectsToLoad.forEach((key, idx) => {
-                // Se key for string direta (preset) ou precisar buscar
-                const missionData = DB[key] || DB['mat']; // Pega do DB
+                const missionData = DB[key] || DB['mat'];
+                const isDone = state.completed.includes(idx);
                 
                 // CRIAÇÃO DO CARD
                 const div = document.createElement('div');
-                div.className = `mission-card ${state.completed.includes(idx) ? 'mission-done' : ''}`;
+                div.className = `mission-card ${isDone ? 'mission-done' : ''}`;
+                
+                // Botão agora é um LINK <a> REAL
                 div.innerHTML = `
                     <div class="mission-left">
                         <div class="mission-icon">${missionData.i}</div>
@@ -176,9 +188,9 @@
                             <span class="xp-badge">+${missionData.xp} XP</span>
                         </div>
                     </div>
-                    <button class="btn-start" onclick="goToActivity('${missionData.url}', ${idx})">
-                        ${state.completed.includes(idx) ? 'Concluído' : 'Ir Agora ➔'}
-                    </button>
+                    <a href="${missionData.url}" class="btn-start" onclick="markAsDone(${idx})">
+                        ${isDone ? 'Concluído ✅' : 'Ir Agora ➔'}
+                    </a>
                 `;
                 list.appendChild(div);
             });
@@ -186,17 +198,14 @@
             document.getElementById('trackTitle').innerText = state.track === 'custom' ? 'Seu Plano Personalizado' : 'Plano de Estudos';
         }
 
-        function goToActivity(url, idx) {
-            if(state.completed.includes(idx)) return;
-            
-            // Marca como feito visualmente antes de ir (ou salva no localstorage pra quando voltar)
-            state.completed.push(idx);
-            
-            // REDIRECIONAMENTO INTERNO
-            window.location.href = url; 
+        function markAsDone(idx) {
+            if(!state.completed.includes(idx)) {
+                state.completed.push(idx);
+                // Aqui você pode salvar no localStorage se quiser
+            }
         }
 
-        // --- 4. TIMER REFEITO (FUNCIONA MESMO) ---
+        // --- 4. TIMER REFEITO ---
         function toggleTimer() {
             const btn = document.getElementById('playBtn');
             const status = document.getElementById('timerStatus');
@@ -212,7 +221,7 @@
                 // INICIAR
                 state.isRunning = true;
                 btn.innerText = "⏸ PAUSAR";
-                btn.style.background = "#F59E0B"; // Laranja
+                btn.style.background = "#F59E0B";
                 status.innerText = "Focando...";
                 
                 timerInterval = setInterval(() => {
@@ -227,18 +236,16 @@
             state.isRunning = false;
             state.elapsedSeconds = 0;
             document.getElementById('playBtn').innerText = "▶ INICIAR";
-            document.getElementById('playBtn').style.background = "#10B981"; // Verde
+            document.getElementById('playBtn').style.background = "#10B981";
             document.getElementById('timerStatus').innerText = "Pronto?";
             updateDisplay();
         }
 
         function updateDisplay() {
-            // Converte segundos totais em MM:SS (ou HH:MM:SS)
             const hours = Math.floor(state.elapsedSeconds / 3600);
             const minutes = Math.floor((state.elapsedSeconds % 3600) / 60);
             const seconds = state.elapsedSeconds % 60;
 
-            // Formatação com zero à esquerda
             const fmt = (n) => n.toString().padStart(2, '0');
             const timeString = hours > 0 
                 ? `${fmt(hours)}:${fmt(minutes)}:${fmt(seconds)}` 
@@ -256,34 +263,30 @@
                 `conic-gradient(#10B981 ${percent}%, rgba(255,255,255,0.1) 0%)`;
         }
 
-        // --- 5. AUDIO SYSTEM (Reais) ---
+        // --- 5. SISTEMA DE ÁUDIO ---
         function toggleAudio(type) {
             const audioEl = document.getElementById(`audio-${type}`);
             const btn = document.getElementById(`btn-${type}`);
 
-            // Se clicar no que já está tocando, pausa
             if (currentAudio === type) {
                 audioEl.pause();
                 currentAudio = null;
                 btn.classList.remove('playing');
             } else {
-                // Pausa todos os outros antes
                 ['rain', 'lofi', 'white'].forEach(t => {
                     document.getElementById(`audio-${t}`).pause();
                     document.getElementById(`btn-${t}`).classList.remove('playing');
                 });
 
-                // Toca o novo
-                audioEl.volume = 0.5; // 50% volume
-                audioEl.play().catch(e => console.log("Erro ao tocar áudio (interação necessária):", e));
+                audioEl.volume = 0.5;
+                audioEl.play().catch(e => console.log("Erro ao tocar áudio:", e));
                 currentAudio = type;
                 btn.classList.add('playing');
             }
         }
 
-        // Init
-        selectTrack(document.querySelector('.track-option'), 'med'); // Default
+        // Inicialização
+        selectTrack(document.querySelector('.track-option'), 'med'); 
     </script>
 </body>
-
 </html>
