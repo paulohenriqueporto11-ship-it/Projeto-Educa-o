@@ -402,6 +402,61 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
 /* Mobile (Celulares) */
 @media (max-width: 768px) {
     .container { margin: 20px auto; }
+
+   /* ==========================================================================
+   10. ATUALIZAÇÕES V2 (Simulados & Aulas)
+   ========================================================================== */
+
+/* --- SIMULADOS: Menu de Matérias --- */
+.subjects-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;
+}
+
+.subject-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 16px; padding: 25px; cursor: pointer;
+    transition: all 0.2s; display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+
+.subject-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+
+/* Cores específicas por matéria */
+.subject-card[data-type="humanas"]:hover { border-color: #F59E0B; background: #FFFBEB; }
+.subject-card[data-type="natureza"]:hover { border-color: #10B981; background: #ECFDF5; }
+.subject-card[data-type="linguagens"]:hover { border-color: #EC4899; background: #FDF2F8; }
+.subject-card[data-type="matematica"]:hover { border-color: #3B82F6; background: #EFF6FF; }
+
+.subject-icon { font-size: 3rem; margin-bottom: 15px; }
+.subject-title { font-weight: 800; font-size: 1.2rem; color: var(--text-main); margin-bottom: 5px; }
+.subject-count { color: var(--text-muted); font-size: 0.9rem; }
+
+/* --- CRONOGRAMA: Aula Expandida --- */
+.lesson-content {
+    display: none; padding: 20px; background: #F8FAFC;
+    border-top: 1px solid var(--border); animation: slideDown 0.3s ease;
+}
+.lesson-content.active { display: block; }
+
+.video-responsive {
+    position: relative; padding-bottom: 56.25%; /* 16:9 */
+    height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px;
+    box-shadow: var(--shadow-md);
+}
+.video-responsive iframe {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+}
+
+.lesson-summary h4 { margin-bottom: 10px; color: var(--primary); }
+.lesson-summary p { font-size: 0.95rem; line-height: 1.6; color: var(--text-main); margin-bottom: 15px; }
+
+/* Botão de Expandir */
+.btn-expand {
+    background: none; border: none; font-size: 1.2rem; color: var(--text-muted);
+    cursor: pointer; transition: 0.2s; margin-left: 10px;
+}
+.btn-expand:hover { color: var(--primary); }
+
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     textarea.main-input { height: 50vh; }
     .score-hero .val { font-size: 4rem; }
     .grid-results { grid-template-columns: 1fr; }
