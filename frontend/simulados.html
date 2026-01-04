@@ -16,156 +16,162 @@
         <a href="index.html" class="btn-outline" style="border:none; font-weight:600;">← Voltar</a>
     </nav>
 
-    <div class="container" style="display: flex; align-items: center; justify-content: center; min-height: 80vh;">
+    <div class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
         
-        <div id="startScreen" class="quiz-container">
-            <span class="tool-icon" style="margin: 0 auto 20px auto;">🧠</span>
-            <h1 style="margin-bottom: 10px;">Desafio Diário</h1>
-            <p style="color:var(--text-muted); margin-bottom: 30px;">Teste os seus conhecimentos com 5 questões aleatórias estilo ENEM.</p>
-            <button class="btn" style="padding: 15px 40px; font-size: 1.2rem;" onclick="startQuiz()">Começar Agora</button>
+        <div id="menuScreen" style="width: 100%;">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="margin-bottom: 10px;">Escolha a Área</h1>
+                <p style="color:var(--text-muted);">Filtre as questões para focar no seu ponto fraco.</p>
+            </div>
+
+            <div class="subjects-grid">
+                <div class="subject-card" data-type="humanas" onclick="startQuiz('Humanas')">
+                    <span class="subject-icon">🏛️</span>
+                    <span class="subject-title">Ciências Humanas</span>
+                    <span class="subject-count">História, Geo, Filo</span>
+                </div>
+                <div class="subject-card" data-type="natureza" onclick="startQuiz('Natureza')">
+                    <span class="subject-icon">🧬</span>
+                    <span class="subject-title">Ciências da Natureza</span>
+                    <span class="subject-count">Bio, Quím, Fís</span>
+                </div>
+                <div class="subject-card" data-type="linguagens" onclick="startQuiz('Linguagens')">
+                    <span class="subject-icon">📚</span>
+                    <span class="subject-title">Linguagens</span>
+                    <span class="subject-count">Português, Lit, Artes</span>
+                </div>
+                <div class="subject-card" data-type="matematica" onclick="startQuiz('Matemática')">
+                    <span class="subject-icon">📐</span>
+                    <span class="subject-title">Matemática</span>
+                    <span class="subject-count">Lógica, Geometria</span>
+                </div>
+                <div class="subject-card" onclick="startQuiz('Geral')" style="border-color: var(--primary);">
+                    <span class="subject-icon">🎲</span>
+                    <span class="subject-title">Simulado Geral</span>
+                    <span class="subject-count">Mistura de tudo</span>
+                </div>
+            </div>
         </div>
 
         <div id="quizScreen" class="quiz-container" style="display: none;">
             <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                <span class="badge-subject" id="subjectTag">Matéria</span>
+                <span class="badge-subject" id="subjectTag">Geral</span>
                 <span style="font-weight:600; color:var(--text-muted);">Questão <span id="qIndex">1</span>/5</span>
             </div>
-            
-            <div class="question-text" id="questionText">Carregando...</div>
-            
-            <div class="options-grid" id="optionsContainer">
-                </div>
+            <div class="question-text" id="questionText">...</div>
+            <div class="options-grid" id="optionsContainer"></div>
         </div>
 
         <div id="resultScreen" class="quiz-container" style="display: none;">
             <div style="font-size: 4rem;">🏆</div>
-            <h2 style="margin-bottom: 10px;">Resultado Final</h2>
+            <h2 style="margin-bottom: 10px;">Resultado</h2>
             <div class="quiz-score" id="finalScore">0/5</div>
-            <p id="feedbackText" style="margin-bottom: 30px; color:var(--text-muted);">Bom trabalho!</p>
-            
+            <p id="feedbackText" style="margin-bottom: 30px; color:var(--text-muted);">...</p>
             <div style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn" onclick="location.reload()">Tentar Novamente</button>
-                <a href="index.html" class="btn-outline" style="padding:12px 24px; border-radius:10px; display:inline-flex; align-items:center;">Voltar ao Menu</a>
+                <button class="btn" onclick="location.reload()">Escolher Outra</button>
             </div>
         </div>
 
     </div>
 
     <script>
-        // --- BANCO DE QUESTÕES (Mini Database) ---
-        const allQuestions = [
-            {
-                subject: "Linguagens",
-                text: "No contexto da redação do ENEM, o que caracteriza a 'fuga ao tema'?",
-                options: ["Erros gramaticais excessivos", "Não abordar o assunto proposto pela frase temática", "Escrever menos de 7 linhas", "Não apresentar proposta de intervenção"],
-                correct: 1
-            },
-            {
-                subject: "História",
-                text: "Qual movimento artístico brasileiro de 1922 rompeu com o tradicionalismo e buscou uma identidade nacional?",
-                options: ["Barroco Mineiro", "Romantismo", "Semana de Arte Moderna", "Tropicalismo"],
-                correct: 2
-            },
-            {
-                subject: "Gramática",
-                text: "Assinale a alternativa onde o uso da crase é OBRIGATÓRIO:",
-                options: ["Fui a pé para casa.", "Ele obedeceu à lei.", "Estou disposto a ajudar.", "Comprei o carro a prazo."],
-                correct: 1
-            },
-            {
-                subject: "Filosofia",
-                text: "Quem é o autor da frase 'Penso, logo existo'?",
-                options: ["Platão", "Nietzsche", "Descartes", "Sócrates"],
-                correct: 2
-            },
-            {
-                subject: "Sociologia",
-                text: "Segundo Zygmunt Bauman, vivemos em uma 'Modernidade Líquida'. O que isso significa?",
-                options: ["As relações são fluidas e frágeis", "A escassez de água no mundo", "A solidez das instituições governamentais", "O aumento do nível dos oceanos"],
-                correct: 0
-            },
-            {
-                subject: "Redação",
-                text: "Qual conectivo abaixo expressa ideia de CONCLUSÃO?",
-                options: ["Todavia", "Portanto", "Embora", "Visto que"],
-                correct: 1
-            },
-            {
-                subject: "Matemática",
-                text: "Qual é a probabilidade de tirar um número par em um dado comum de 6 faces?",
-                options: ["30%", "50%", "25%", "60%"],
-                correct: 1 // 3 em 6 = 50%
-            }
+        // --- BANCO DE DADOS (Expandido e Categorizado) ---
+        const database = [
+            // LINGUAGENS
+            { cat: "Linguagens", txt: "O que caracteriza a 'fuga ao tema' na redação?", opt: ["Erros gramaticais", "Não abordar o assunto central", "Texto curto", "Letra feia"], cor: 1 },
+            { cat: "Linguagens", txt: "Qual função da linguagem foca no receptor?", opt: ["Emotiva", "Metalinguística", "Conativa", "Referencial"], cor: 2 },
+            { cat: "Linguagens", txt: "O movimento Modernista de 1922 criticava:", opt: ["O Parnasianismo", "O Barroco", "O Realismo", "O Simbolismo"], cor: 0 },
+            
+            // HUMANAS
+            { cat: "Humanas", txt: "A 'Guerra Fria' foi um conflito ideológico entre:", opt: ["EUA e China", "Alemanha e França", "EUA e URSS", "Inglaterra e Japão"], cor: 2 },
+            { cat: "Humanas", txt: "O conceito de 'Mais-valia' pertence a:", opt: ["Max Weber", "Karl Marx", "Durkheim", "Adam Smith"], cor: 1 },
+            { cat: "Humanas", txt: "Qual o bioma predominante no Centro-Oeste?", opt: ["Amazônia", "Caatinga", "Cerrado", "Mata Atlântica"], cor: 2 },
+
+            // NATUREZA
+            { cat: "Natureza", txt: "Qual a organela responsável pela respiração celular?", opt: ["Ribossomo", "Mitocôndria", "Lisossomo", "Golgi"], cor: 1 },
+            { cat: "Natureza", txt: "Na tabela periódica, o 'Na' representa:", opt: ["Nitrogênio", "Níquel", "Sódio", "Neônio"], cor: 2 },
+            { cat: "Natureza", txt: "A 1ª Lei de Newton é conhecida como:", opt: ["Lei da Ação e Reação", "Lei da Inércia", "Lei da Gravidade", "Lei da Força"], cor: 1 },
+
+            // MATEMÁTICA
+            { cat: "Matemática", txt: "Quanto é 20% de 500?", opt: ["50", "100", "150", "200"], cor: 1 },
+            { cat: "Matemática", txt: "A soma dos ângulos internos de um triângulo é:", opt: ["180°", "360°", "90°", "270°"], cor: 0 },
+            { cat: "Matemática", txt: "Bhaskara é usada para equações de qual grau?", opt: ["Primeiro", "Segundo", "Terceiro", "Quarto"], cor: 1 }
         ];
 
-        // --- LÓGICA DO QUIZ ---
-        let currentQuestions = [];
+        // Variáveis de Estado
+        let quizPool = [];
         let currentIndex = 0;
         let score = 0;
 
-        function startQuiz() {
-            // Embaralha e pega 5 questões
-            currentQuestions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 5);
+        function startQuiz(category) {
+            // Filtra por matéria ou pega tudo
+            if (category === 'Geral') {
+                quizPool = database.sort(() => 0.5 - Math.random()).slice(0, 5);
+            } else {
+                // Filtra pelo nome da categoria (ex: Humanas)
+                const filtered = database.filter(q => q.cat.includes(category) || (category === 'Natureza' && q.cat === 'Natureza'));
+                // Se tiver poucas perguntas, repete algumas (no futuro terá banco maior)
+                quizPool = filtered.sort(() => 0.5 - Math.random()).slice(0, 5);
+            }
+
+            if(quizPool.length === 0) return alert("Em breve mais questões dessa matéria!");
+
             currentIndex = 0;
             score = 0;
+            document.getElementById('subjectTag').innerText = category;
             
-            document.getElementById('startScreen').style.display = 'none';
+            // Troca de tela
+            document.getElementById('menuScreen').style.display = 'none';
             document.getElementById('quizScreen').style.display = 'block';
+            
             loadQuestion();
         }
 
         function loadQuestion() {
-            const q = currentQuestions[currentIndex];
-            document.getElementById('subjectTag').innerText = q.subject;
+            const q = quizPool[currentIndex];
             document.getElementById('qIndex').innerText = currentIndex + 1;
-            document.getElementById('questionText').innerText = q.text;
+            document.getElementById('questionText').innerText = q.txt;
             
             const container = document.getElementById('optionsContainer');
             container.innerHTML = '';
 
-            q.options.forEach((opt, index) => {
+            q.opt.forEach((opt, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = opt;
-                btn.onclick = () => selectAnswer(index, q.correct, btn);
+                btn.onclick = () => checkAnswer(index, q.cor, btn);
                 container.appendChild(btn);
             });
         }
 
-        function selectAnswer(selected, correct, btnElement) {
-            // Bloqueia todos os botões
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons.forEach(b => b.disabled = true);
+        function checkAnswer(selected, correct, btn) {
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
 
             if (selected === correct) {
-                btnElement.classList.add('correct');
+                btn.classList.add('correct');
                 score++;
             } else {
-                btnElement.classList.add('wrong');
-                // Mostra qual era a certa
-                buttons[correct].classList.add('correct');
+                btn.classList.add('wrong');
+                allBtns[correct].classList.add('correct'); // Mostra a certa
             }
 
-            // Espera 1.5s e vai pra próxima
             setTimeout(() => {
                 currentIndex++;
-                if (currentIndex < currentQuestions.length) {
-                    loadQuestion();
-                } else {
-                    finishQuiz();
-                }
+                if (currentIndex < quizPool.length) loadQuestion();
+                else showResults();
             }, 1500);
         }
 
-        function finishQuiz() {
+        function showResults() {
             document.getElementById('quizScreen').style.display = 'none';
             document.getElementById('resultScreen').style.display = 'block';
-            document.getElementById('finalScore').innerText = `${score}/5`;
+            document.getElementById('finalScore').innerText = `${score}/${quizPool.length}`;
             
             const msg = document.getElementById('feedbackText');
-            if(score === 5) msg.innerText = "Perfeito! Você é um gênio! 🤓";
-            else if(score >= 3) msg.innerText = "Muito bom! Continue estudando. 📚";
-            else msg.innerText = "Precisa revisar mais... 😅";
+            if (score === quizPool.length) msg.innerText = "Gabaritou! Você é uma máquina! 🤖";
+            else if (score > quizPool.length / 2) msg.innerText = "Mandou bem! Continue assim.";
+            else msg.innerText = "Não desanime, revise o conteúdo!";
         }
     </script>
 </body>
