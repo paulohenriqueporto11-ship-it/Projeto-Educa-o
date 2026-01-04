@@ -19,7 +19,7 @@ const rateLimiter = (req, res, next) => {
     
     // Configuração: Máximo 10 tentativas a cada 1 minuto por aluno
     const WINDOW_MS = 60 * 1000; // 1 minuto
-    const MAX_REQUESTS = 10;
+    const MAX_REQUESTS = 3;
 
     const now = Date.now();
     
