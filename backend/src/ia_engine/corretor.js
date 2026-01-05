@@ -1,5 +1,5 @@
 // src/ia_engine/corretor.js
-// VERSÃO 19.0 - FINAL STABLE (Com Proteção Anti-Crash)
+// VERSÃO 20.0 - STABLE (Correções do Analista ENEM)
 
 // =================================================================
 // ⚙️ CONFIGURAÇÕES
@@ -7,35 +7,33 @@
 const CONFIG = {
     PONTOS: {
         MAX: 200,
-        MIN_SAFETY: 60, // Nota mínima para textos legíveis
+        MIN_SAFETY: 40, // Nota mínima ajustada (era 60)
         PENALIDADE: {
-            LEVE: 10,
-            MEDIA: 20,
-            GRAVE: 40,
-            FATAL: 80,
-            REPETICAO: 5,
-            FRASE_LONGA_BASE: 5
+            LEVE: 20,    // Aumentei penalidade leve (era 10)
+            MEDIA: 40,   // Aumentei (era 20)
+            GRAVE: 60,   // Aumentei (era 40)
+            FATAL: 120,  // Aumentei (era 80)
+            REPETICAO: 10,
+            FRASE_LONGA_BASE: 10
         },
         BONUS: {
             VOCABULARIO: 20,
-            ELEMENTO_C5: 40,
             AUTORIDADE: 20
         }
     },
     LIMITES: {
         MIN_PALAVRAS: 50,
         MIN_VOCABULARIO_UNICO: 0.22, 
-        FRASE_LONGA_QTD: 40, 
-        FRASE_LONGA_COM_PONTUACAO: 60,
-        MAX_REPETICAO_CONECTIVO: 4, 
+        FRASE_LONGA_QTD: 35, // Mais rigoroso
+        FRASE_LONGA_COM_PONTUACAO: 55,
+        MAX_REPETICAO_CONECTIVO: 3, 
         MIN_PARAGRAFOS: 3,
-        TAMANHO_DETALHAMENTO: 70,
-        MIN_DENSIDADE_COESIVA: 0.03
+        MIN_DENSIDADE_COESIVA: 0.035 // FIXO (Solicitação do Analista)
     }
 };
 
 // =================================================================
-// 📚 LÉXICO
+// 📚 LÉXICO (MANTIDO IGUAL)
 // =================================================================
 const LEXICO = {
     ERROS_COMUNS: [
@@ -52,7 +50,7 @@ const LEXICO = {
     
     PONTUACAO_DUPLICADA: /([!?.]){2,}/, 
     
-    INFORMALIDADE: ['vc', 'pq', 'tb', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'tá', 'né', 'daí', 'aí', 'então', 'coisa'],
+    INFORMALIDADE: ['vc', 'pq', 'tb', 'pra', 'mt', 'n', 'eh', 'aki', 'naum', 'axo', 'tá', 'né', 'daí', 'aí', 'então', 'coisa', 'gente'],
     GIRIAS: ['pô', 'caraca', 'mano', 'véi', 'tipo assim', 'bagulho', 'treta', 'tlgd', 'blz', 'zuado'],
     
     VERBOS_CAUSA_EFEITO: [
@@ -81,7 +79,7 @@ const LEXICO = {
         'naquela', 'tal', 'tais', 'outro', 'outra', 'outros'
     ],
     
-    REPERTORIO_GENERICO: ['dados', 'estatística', 'pesquisa', 'estudo', 'cenário', 'panorama', 'notícia', 'reportagem', 'internet'],
+    REPERTORIO_GENERICO: ['dados', 'estatística', 'pesquisa', 'estudo', 'cenário', 'panorama', 'notícia', 'reportagem', 'internet', 'hoje em dia', 'atualmente'],
     REPERTORIO_AUTORIDADE: [
         'segundo', 'de acordo', 'conforme', 'ibge', 'oms', 'onu', 'constituição', 'lei', 'artigo', 
         'filósofo', 'sociólogo', 'pensador', 'obra', 'livro', 'filme', 'série', 'documentário', 
@@ -167,7 +165,6 @@ function contemTermo(texto, listaTermos) {
 }
 
 function contarOcorrencias(texto, termo) {
-    // Escape simples para evitar crash em regex
     const termoEscapado = termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`\\b${termoEscapado}\\b`, 'gi');
     const matches = texto.match(regex);
@@ -175,7 +172,7 @@ function contarOcorrencias(texto, termo) {
 }
 
 // =================================================================
-// 🧠 MÓDULOS DE ANÁLISE
+// 🧠 MÓDULOS DE ANÁLISE (ATUALIZADOS)
 // =================================================================
 
 function analisarC1(texto, tokens, frases, resC1) {
@@ -185,13 +182,13 @@ function analisarC1(texto, tokens, frases, resC1) {
     const girias = tokensNorm.filter(t => LEXICO.GIRIAS.includes(t));
     if (girias.length > 0) {
         const trecho = encontrarTrecho(texto, girias[0]);
-        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.MEDIA, "Linguagem Inadequada", "Uso de gírias.", trecho, "Remova gírias.", 'alta');
+        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.GRAVE, "Linguagem Inadequada", "Uso de gírias.", trecho, "Remova gírias.", 'alta');
     }
 
     const informais = tokensNorm.filter(t => LEXICO.INFORMALIDADE.includes(t));
     if (informais.length > 0) {
         const trecho = encontrarTrecho(texto, informais[0]);
-        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.LEVE, "Oralidade", "Termo informal.", trecho, "Use a norma padrão.", 'media');
+        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.MEDIA, "Oralidade", "Termo informal.", trecho, "Use a norma padrão.", 'media');
     }
 
     // 2. Erros Comuns
@@ -207,7 +204,7 @@ function analisarC1(texto, tokens, frases, resC1) {
         penalizar(resC1, CONFIG.PONTOS.PENALIDADE.LEVE, "Pontuação", "Sinais duplicados.", "Uso informal (!!).", "Use apenas um sinal.", 'baixa');
     }
 
-    // 3. Frases Longas (Logarítmico)
+    // 3. Frases Longas
     let penalidadeFraseAcumulada = 0;
     frases.forEach(f => {
         const palavras = f.split(/\s+/).length;
@@ -221,11 +218,11 @@ function analisarC1(texto, tokens, frases, resC1) {
     });
     
     if (penalidadeFraseAcumulada > 0) {
-        penalizar(resC1, Math.min(50, Math.floor(penalidadeFraseAcumulada)), "Fluidez", "Frases muito extensas.", "Dificulta a leitura.", "Use mais pontos finais.", 'media');
+        penalizar(resC1, Math.min(80, Math.floor(penalidadeFraseAcumulada)), "Fluidez", "Frases muito extensas.", "Dificulta a leitura.", "Use mais pontos finais.", 'media');
     }
 
     // 4. Repetição
-    const limiteRepeticao = Math.max(5, Math.floor(tokens.length * 0.015));
+    const limiteRepeticao = Math.max(4, Math.floor(tokens.length * 0.015)); // Mais rigoroso
     const contagem = {};
     tokensNorm.forEach(t => {
         if (t.length > 4 && isNaN(t)) contagem[t] = (contagem[t] || 0) + 1;
@@ -242,7 +239,7 @@ function analisarC1(texto, tokens, frases, resC1) {
     });
 
     if (repeticoes > 0) {
-        penalizar(resC1, Math.min(40, repeticoes * CONFIG.PONTOS.PENALIDADE.REPETICAO), "Vocabulário", "Repetição excessiva.", `Ex: "${exemplo}"`, "Use sinônimos.", 'media');
+        penalizar(resC1, Math.min(60, repeticoes * CONFIG.PONTOS.PENALIDADE.REPETICAO), "Vocabulário", "Repetição excessiva.", `Ex: "${exemplo}"`, "Use sinônimos.", 'media');
     }
 
     resC1.nota = Math.max(CONFIG.PONTOS.MIN_SAFETY, resC1.nota);
@@ -257,7 +254,7 @@ function analisarC2(textoNorm, temaNorm, paragrafos, resC2) {
     let acertos = 0;
     tokensTema.forEach(t => { if (textoNorm.includes(t)) acertos++; });
     
-    const cobertura = acertos / (tokensTema.length || 1); // Evita div by zero
+    const cobertura = acertos / (tokensTema.length || 1); 
     const isTemaCurto = tokensTema.length < 3;
 
     if (acertos === 0) {
@@ -269,7 +266,7 @@ function analisarC2(textoNorm, temaNorm, paragrafos, resC2) {
     }
 
     if (paragrafos.length < CONFIG.LIMITES.MIN_PARAGRAFOS) {
-        const pts = paragrafos.length === 2 ? 40 : 80;
+        const pts = paragrafos.length === 2 ? 60 : 120; // Penalidade maior
         penalizar(resC2, pts, "Estrutura", "Estrutura incompleta.", `Apenas ${paragrafos.length} parágrafos.`, "Escreva Intro, Desenv. e Conclusão.", 'alta');
     }
     
@@ -282,18 +279,20 @@ function analisarC3(textoLower, resC3) {
 
     const forcaArgumentativa = (countExpl * 0.5) + (countVerbos * 0.8);
 
-    if (forcaArgumentativa < 3) {
-        penalizar(resC3, 40, "Argumentação", "Falta aprofundamento.", "Argumentos expositivos.", "Use 'pois', 'visto que' ou verbos de impacto.", 'alta');
-    } else if (forcaArgumentativa < 6) {
-        penalizar(resC3, 20, "Desenvolvimento", "Argumentação tímida.", "Ideias pouco exploradas.", "Detalhe mais consequências.", 'media');
+    if (forcaArgumentativa < 4) { // Mais exigente (era 3)
+        penalizar(resC3, 60, "Argumentação", "Falta aprofundamento.", "Argumentos expositivos.", "Use 'pois', 'visto que' ou verbos de impacto.", 'alta');
+    } else if (forcaArgumentativa < 8) {
+        penalizar(resC3, 40, "Desenvolvimento", "Argumentação tímida.", "Ideias pouco exploradas.", "Detalhe mais consequências.", 'media');
     }
 
     const temAutoridade = CACHE.AUTORIDADE_REGEX.test(textoLower);
     const temGenerico = contemTermo(textoLower, LEXICO.REPERTORIO_GENERICO);
 
+    // CORREÇÃO (Analista): Só penaliza se não tiver nada. Só dá bônus se o texto for forte.
     if (!temAutoridade && !temGenerico) {
-        penalizar(resC3, 60, "Repertório", "Sem repertório externo.", "Texto baseado no senso comum.", "Cite dados, leis ou autores.", 'alta');
-    } else if (temAutoridade) {
+        penalizar(resC3, 80, "Repertório", "Sem repertório externo.", "Texto baseado no senso comum.", "Cite dados, leis ou autores.", 'alta');
+    } else if (temAutoridade && forcaArgumentativa > 5) {
+        // Só dá bônus se tiver argumentação mínima para sustentar a autoridade
         resC3.nota = Math.min(200, resC3.nota + CONFIG.PONTOS.BONUS.AUTORIDADE);
     }
     
@@ -313,27 +312,28 @@ function analisarC4(textoLower, tokens, paragrafos, resC4) {
         totalCoesivos += (qtd * 0.6);
     });
 
-    const densidadeAlvo = Math.min(0.04, Math.max(0.02, tokens.length * 0.0001)); 
+    // CORREÇÃO (Analista): Densidade fixa e não dependente do tamanho
+    const densidadeAlvo = CONFIG.LIMITES.MIN_DENSIDADE_COESIVA; // 0.035
     const densidadeAtual = totalCoesivos / (tokens.length || 1);
 
     if (densidadeAtual < densidadeAlvo) {
-        penalizar(resC4, 60, "Coesão", "Texto desconexo.", "Baixa densidade de elementos de ligação.", "Use mais conectivos.", 'alta');
+        const penalidade = Math.floor((densidadeAlvo - densidadeAtual) * 2000); // Fórmula de penalidade proporcional
+        penalizar(resC4, Math.min(80, penalidade), "Coesão", "Texto desconexo.", "Baixa densidade de elementos de ligação.", "Use mais conectivos.", 'alta');
     }
 
     let conexoesInter = 0;
     if (paragrafos.length > 1) {
         for (let i = 1; i < paragrafos.length; i++) {
-            const inicio = paragrafos[i].trim().substring(0, 25).toLowerCase();
+            const inicio = paragrafos[i].trim().substring(0, 30).toLowerCase();
             const temConectivo = LEXICO.CONECTIVOS_TRANSICAO.some(c => inicio.includes(c));
             const temRef = LEXICO.REFERENCIAS.some(r => inicio.includes(r));
-            const outros = ['nesse', 'dessa', 'diante', 'enfim', 'ademais', 'outro', 'tal', 'mediante'].some(o => inicio.includes(o));
-
-            if (temConectivo || temRef || outros) conexoesInter++;
+            
+            if (temConectivo || temRef) conexoesInter++;
         }
     }
 
-    if (conexoesInter < 2 && paragrafos.length > 2) {
-        penalizar(resC4, 40, "Estrutura", "Falta elo entre parágrafos.", "Parágrafos isolados.", "Use 'Além disso', 'Nesse contexto'.", 'media');
+    if (conexoesInter < (paragrafos.length - 1)) {
+        penalizar(resC4, 40, "Estrutura", "Falta elo entre parágrafos.", "Parágrafos sem conectivo inicial.", "Inicie parágrafos com conectivos.", 'media');
     }
     
     resC4.nota = Math.max(CONFIG.PONTOS.MIN_SAFETY, resC4.nota);
@@ -347,29 +347,40 @@ function analisarC5(paragrafos, resC5) {
     
     resC5.nota = 0; 
     let elementosEncontrados = 0;
+    let tiposEncontrados = new Set(); // CORREÇÃO: Usar Set para garantir elementos ÚNICOS
     let erros = [];
 
     CACHE.C5.forEach(el => {
         if (el.regex.test(textoConclusao)) {
             elementosEncontrados++;
+            tiposEncontrados.add(el.chave);
         } else {
             erros.push(el.msg);
         }
     });
 
-    resC5.nota = elementosEncontrados * 40;
+    // CORREÇÃO (Analista): Cada tipo único vale 40pts.
+    // 4 tipos = 160pts. O 5º elemento (Detalhamento) vem do tamanho/riqueza.
+    let notaBase = tiposEncontrados.size * 40;
 
-    if (resC5.nota === 0 && textoConclusao.length > 80) {
-        resC5.nota = 60; 
-        resC5.erros.push({ tipo: "Aviso", descricao: "Proposta vaga.", exemplo: "Elementos não identificados.", acao: "Use termos como 'O Governo deve...'", severidade: 'alta' });
-    } else if (resC5.nota < 200 && erros.length > 0) {
+    // Verifica Detalhamento (Simulado por tamanho se já tiver base sólida)
+    const temDetalhamento = (textoConclusao.length > 120 && tiposEncontrados.size >= 3);
+    if (temDetalhamento) {
+        notaBase += 40;
+    }
+
+    resC5.nota = Math.min(200, notaBase);
+
+    if (resC5.nota < 200 && erros.length > 0) {
         const errosPrioritarios = erros.filter(e => e.includes('AGENTE') || e.includes('AÇÃO'));
         const msgErro = errosPrioritarios.length > 0 ? errosPrioritarios.join(", ") : erros.slice(0, 2).join(", ");
-        penalizar(resC5, 0, "Completeness", "Elementos ausentes.", msgErro, "Complete a proposta.", 'media');
-    }
-    
-    if (textoConclusao.length > 150 && elementosEncontrados >= 3) {
-        resC5.nota = Math.min(200, resC5.nota + 40);
+        
+        // Se a nota for muito baixa (ex: 0 ou 40), força aviso de proposta vaga
+        if (resC5.nota <= 40) {
+             resC5.erros.push({ tipo: "Competência 5", descricao: "Proposta Inexistente ou Vaga.", exemplo: "Elementos centrais não identificados.", acao: "Quem? O quê? Como? Para quê?", severidade: 'alta' });
+        } else {
+             penalizar(resC5, 0, "Completeness", "Elementos ausentes.", msgErro, "Complete a proposta.", 'media');
+        }
     }
 }
 
@@ -378,7 +389,6 @@ function analisarC5(paragrafos, resC5) {
 // =================================================================
 
 function corrigirRedacao(texto, tema) {
-    // BLINDAGEM: Try/Catch para nunca derrubar o servidor
     try {
         const resultado = {
             notaFinal: 0,
@@ -392,7 +402,6 @@ function corrigirRedacao(texto, tema) {
             analiseGeral: []
         };
 
-        // Validação de Input
         if (typeof texto !== 'string' || !texto) {
             return { sucesso: false, erro: "Texto inválido ou vazio." };
         }
@@ -404,14 +413,12 @@ function corrigirRedacao(texto, tema) {
             return resultado;
         }
 
-        // Processamento
         const textoLower = normalizar(textoLimpo);
         const paragrafos = textoLimpo.split(/\n+/).filter(p => p.trim().length > 0);
         const frases = textoLimpo.match(/[^.?!]+[.?!]+|[^.?!]+$/g) || [];
         const tokens = tokenizar(textoLimpo); 
         const temaNorm = tema ? normalizar(tema) : "livre";
 
-        // Anti-Spam
         const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
         const ratio = uniqueTokens.size / (tokens.length || 1);
         const minVocabDinamico = Math.max(0.15, CONFIG.LIMITES.MIN_VOCABULARIO_UNICO - (50 / (tokens.length || 1)));
@@ -421,20 +428,13 @@ function corrigirRedacao(texto, tema) {
             resultado.analiseGeral.push("🚨 SPAM DETECTADO: Repetição excessiva de palavras.");
             return resultado;
         }
-        if (detectarRepeticaoFrases(frases)) {
-            zerarNotas(resultado);
-            resultado.analiseGeral.push("🚨 SPAM DETECTADO: Frases duplicadas.");
-            return resultado;
-        }
 
-        // Análises
         analisarC1(textoLimpo, tokens, frases, resultado.competencias.c1);
         analisarC2(textoLower, temaNorm, paragrafos, resultado.competencias.c2);
         analisarC3(textoLower, resultado.competencias.c3);
         analisarC4(textoLower, tokens, paragrafos, resultado.competencias.c4);
         analisarC5(paragrafos, resultado.competencias.c5);
 
-        // Soma Final
         resultado.notaFinal = Object.values(resultado.competencias).reduce((acc, c) => acc + c.nota, 0);
         resultado.notaFinal = Math.min(1000, Math.max(0, resultado.notaFinal));
 
