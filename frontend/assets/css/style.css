@@ -967,3 +967,38 @@ input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; 
 
 /* Ajuste Navbar */
 .nav-left { display: flex; align-items: center; gap: 15px; }
+
+/* CSS EXTRA PARA OS CHECKBOXES */
+        .topics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .topic-checkbox {
+            display: none; /* Esconde o checkbox padrão */
+        }
+        .topic-label {
+            background: white;
+            border: 2px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        /* Quando marcado */
+        .topic-checkbox:checked + .topic-label {
+            border-color: var(--primary);
+            background: #EEF2FF; /* Corzinha azul claro */
+            color: var(--primary);
+        }
+        .topic-checkbox:checked + .topic-label::after {
+            content: '✅';
+            font-size: 0.9rem;
+        }
