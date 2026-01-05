@@ -10,14 +10,17 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <audio id="audio-rain" loop preload="none" src="https://actions.google.com/sounds/v1/weather/heavy_rain.ogg"></audio>
-    <audio id="audio-lofi" loop preload="none" src="https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"></audio>
-    <audio id="audio-white" loop preload="none" src="https://actions.google.com/sounds/v1/water/air_conditioner_hum.ogg"></audio>
+    <audio id="audio-rain" loop preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2479/2479-preview.mp3"></audio>
+    <audio id="audio-lofi" loop preload="auto" src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3"></audio>
+    <audio id="audio-white" loop preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2177/2177-preview.mp3"></audio>
 
     <div id="configModal" class="modal-overlay" style="display:none;"> 
         <div class="modal-box">
-            <h2>🚀 Setup Inicial</h2>
-            <p style="color:var(--text-muted); margin-bottom:20px;">Configure seu plano de ataque.</p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0;">🚀 Configuração</h2>
+                <span onclick="closeConfig()" style="font-size:1.8rem; cursor:pointer; color:var(--text-muted);">&times;</span>
+            </div>
+            <p style="color:var(--text-muted); margin-bottom:20px;">Personalize sua jornada.</p>
 
             <label style="font-weight:600;">Sua Trilha:</label>
             <div class="track-grid" id="trackSelector">
@@ -45,18 +48,21 @@
                 <input type="range" min="0.5" max="8" step="0.5" value="2" id="hoursInput" oninput="updateHoursLabel(this.value)">
             </div>
 
-            <button class="btn-save" onclick="saveConfig()">Salvar Cronograma</button>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeConfig()">Cancelar</button>
+                <button class="btn-save" onclick="saveConfig()">Salvar</button>
+            </div>
         </div>
     </div>
 
     <nav>
         <div class="nav-left">
-            <a href="index.html" class="btn-outline" style="border:none; padding:8px 12px;">⬅ Voltar</a>
+            <a href="index.html" class="btn-outline" style="border:none; padding:8px 12px; margin-right:15px; font-weight:600;">⬅ Voltar</a>
             <div class="logo">✨ Estuda.IA</div>
         </div>
         <div class="nav-right">
              <div class="study-timer" id="navTimer">00:00</div>
-             <button class="btn-outline" onclick="openConfig()">⚙️</button>
+             <button class="btn-outline" onclick="openConfig()" title="Configurar">⚙️</button>
         </div>
     </nav>
 
@@ -77,7 +83,7 @@
                 <button class="btn-timer btn-play" id="playBtn" onclick="toggleTimer()">▶ INICIAR</button>
             </div>
 
-            <a href="#" onclick="openConfig(); return false;" class="timer-config-link">⚙️ Ajustar Meta</a>
+            <a onclick="openConfig()" class="timer-config-link">⚙️ Ajustar Meta</a>
 
             <div class="sound-bar">
                 <button class="sound-btn" id="btn-rain" onclick="toggleAudio('rain')">🌧 Chuva</button>
@@ -105,22 +111,20 @@
 
             <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
                 <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Sua Consistência (Últimos 14 dias)</h4>
-                <div class="heatmap-box" id="heatmapGrid">
-                    </div>
+                <div class="heatmap-box" id="heatmapGrid"></div>
             </div>
 
             <div style="margin-bottom:20px;">
                 <h2 id="trackTitle">Missões de Hoje</h2>
             </div>
             
-            <div id="missionsList">
-                </div>
+            <div id="missionsList"></div>
         </div>
     </div>
 
     <script>
         // ===========================================
-        // 1. GESTÃO DE ESTADO (Com Histórico e XP)
+        // 1. GESTÃO DE ESTADO (LOCALSTORAGE)
         // ===========================================
         const savedData = localStorage.getItem('estudaia_v4_state');
         
@@ -137,31 +141,28 @@
             lastLoginDate: null,
             // Controle Diário
             lastDateKey: new Date().toLocaleDateString(),
-            completedToday: [], // IDs das missões de hoje
-            history: {} // Formato: { "10/05/2025": 5 (qtd missões), ... }
+            completedToday: [], 
+            history: {} 
         };
 
-        // Verificação de virada de dia
         const todayKey = new Date().toLocaleDateString();
+        
+        // Reset diário
         if (state.lastDateKey !== todayKey) {
-            // Verifica Streak (se logou ontem, mantém. Se não, zera)
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
+            // Lógica simples de streak
+            const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayKey = yesterday.toLocaleDateString();
-
-            if (state.lastLoginDate === yesterdayKey) {
-                // Mantém streak
-            } else if (state.lastLoginDate !== todayKey) {
-                state.streak = 0; // Quebrou a ofensiva (exceto se for o mesmo dia)
+            
+            if (state.lastLoginDate !== yesterdayKey && state.lastLoginDate !== todayKey) {
+                state.streak = 0; 
             }
-
             state.completedToday = [];
             state.elapsedSeconds = 0;
             state.lastDateKey = todayKey;
             saveState();
         }
 
-        // Atualiza data de login
+        // Atualiza Login
         if (state.lastLoginDate !== todayKey) {
             state.streak++;
             state.lastLoginDate = todayKey;
@@ -170,11 +171,11 @@
 
         function saveState() {
             localStorage.setItem('estudaia_v4_state', JSON.stringify(state));
-            renderGamification(); // Atualiza visual sempre que salvar
+            renderGamification();
         }
 
         // ===========================================
-        // 2. BANCO DE DADOS
+        // 2. BANCO DE DADOS (SIMULADO NO FRONTEND)
         // ===========================================
         const DB = {
             mat: { t: "Matemática", d: "Lista: Geometria Espacial", xp: 200, i: "📐", url: "simulados.html?materia=matematica" },
@@ -202,10 +203,9 @@
         };
 
         // ===========================================
-        // 4. LÓGICA DE GAMIFICAÇÃO & UI
+        // 4. UI & GAMIFICAÇÃO
         // ===========================================
         function renderGamification() {
-            // Nível = Cada 1000 XP sobe 1 nível
             const level = Math.floor(state.totalXP / 1000) + 1;
             const xpCurrent = state.totalXP % 1000;
             const xpPercent = (xpCurrent / 1000) * 100;
@@ -220,21 +220,14 @@
         function renderHeatmap() {
             const grid = document.getElementById('heatmapGrid');
             grid.innerHTML = '';
-            
-            // Gera últimos 14 dias
             for (let i = 13; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
+                const d = new Date(); d.setDate(d.getDate() - i);
                 const k = d.toLocaleDateString();
-                
                 const count = state.history[k] || 0;
-                let activeClass = '';
-                if (count >= 4) activeClass = 'active-3';
-                else if (count >= 2) activeClass = 'active-2';
-                else if (count >= 1) activeClass = 'active-1';
-
+                let cls = '';
+                if (count >= 4) cls = 'active-3'; else if (count >= 2) cls = 'active-2'; else if (count >= 1) cls = 'active-1';
                 const div = document.createElement('div');
-                div.className = `heatmap-day ${activeClass}`;
+                div.className = `heatmap-day ${cls}`;
                 div.title = `${k}: ${count} missões`;
                 grid.appendChild(div);
             }
@@ -244,15 +237,11 @@
             const el = document.createElement('div');
             el.className = 'floating-xp';
             el.innerText = `+${amount} XP`;
-            el.style.left = `${x}px`;
-            el.style.top = `${y}px`;
+            el.style.left = `${x}px`; el.style.top = `${y}px`;
             document.body.appendChild(el);
             setTimeout(() => el.remove(), 1000);
         }
 
-        // ===========================================
-        // 5. MISSÕES & RENDERIZAÇÃO
-        // ===========================================
         function renderMissions() {
             const list = document.getElementById('missionsList');
             list.innerHTML = '';
@@ -267,8 +256,6 @@
                 
                 const div = document.createElement('div');
                 div.className = `mission-card ${isDone ? 'mission-done' : ''}`;
-                
-                // Note o "event" passado no onclick para pegar a posição do mouse
                 div.innerHTML = `
                     <div class="mission-left">
                         <div class="mission-icon">${data.i}</div>
@@ -291,33 +278,27 @@
 
         function completeMission(e, idx, xp) {
             if (!state.completedToday.includes(idx)) {
-                // Lógica XP
                 state.completedToday.push(idx);
                 state.totalXP += xp;
                 
-                // Lógica Histórico
                 const k = state.lastDateKey;
                 state.history[k] = (state.history[k] || 0) + 1;
-                
                 saveState();
                 
-                // Efeitos Visuais
                 confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
                 spawnFloatingXP(xp, e.clientX, e.clientY);
                 
-                // Delay para navegar, para dar tempo de ver a animação
-                e.preventDefault(); // Impede navegação imediata
+                e.preventDefault();
                 const url = e.currentTarget.getAttribute('href');
-                
                 setTimeout(() => {
-                    renderMissions(); // Atualiza UI
-                    window.location.href = url; // Navega
+                    renderMissions();
+                    window.location.href = url;
                 }, 800);
             }
         }
 
         // ===========================================
-        // 6. TIMER & AUDIO
+        // 5. TIMER & AUDIO
         // ===========================================
         let timerInterval = null;
         let currentAudio = null;
@@ -329,15 +310,10 @@
             if (state.isRunning) {
                 clearInterval(timerInterval);
                 state.isRunning = false;
-                btn.innerText = "▶ CONTINUAR";
-                btn.style.background = "#4F46E5";
-                status.innerText = "Pausado";
+                btn.innerText = "▶ CONTINUAR"; btn.style.background = "#4F46E5"; status.innerText = "Pausado";
             } else {
                 state.isRunning = true;
-                btn.innerText = "⏸ PAUSAR";
-                btn.style.background = "#F59E0B";
-                status.innerText = "Focando...";
-                
+                btn.innerText = "⏸ PAUSAR"; btn.style.background = "#F59E0B"; status.innerText = "Focando...";
                 timerInterval = setInterval(() => {
                     state.elapsedSeconds++;
                     if(state.elapsedSeconds % 10 === 0) saveState();
@@ -348,11 +324,8 @@
 
         function resetTimer() {
             clearInterval(timerInterval);
-            state.isRunning = false;
-            state.elapsedSeconds = 0;
-            saveState();
-            document.getElementById('playBtn').innerText = "▶ INICIAR";
-            document.getElementById('playBtn').style.background = "#10B981";
+            state.isRunning = false; state.elapsedSeconds = 0; saveState();
+            document.getElementById('playBtn').innerText = "▶ INICIAR"; document.getElementById('playBtn').style.background = "#10B981";
             document.getElementById('timerStatus').innerText = "Pronto?";
             updateDisplay();
         }
@@ -377,44 +350,33 @@
             const el = document.getElementById(`audio-${type}`);
             const btn = document.getElementById(`btn-${type}`);
 
-            // Se for o mesmo, pausa
             if (currentAudio === type) {
-                el.pause();
-                currentAudio = null;
-                btn.classList.remove('playing');
+                el.pause(); currentAudio = null; btn.classList.remove('playing');
                 return;
             }
-
-            // Para os outros
             ['rain', 'lofi', 'white'].forEach(t => {
                 const other = document.getElementById(`audio-${t}`);
                 const b = document.getElementById(`btn-${t}`);
-                other.pause();
-                other.currentTime = 0;
-                b.classList.remove('playing');
+                other.pause(); other.currentTime = 0; b.classList.remove('playing');
             });
-
-            // Toca o novo (Tratamento de Erro do Chrome)
+            
             el.volume = 0.5;
             const promise = el.play();
             if (promise !== undefined) {
                 promise.then(() => {
-                    currentAudio = type;
-                    btn.classList.add('playing');
+                    currentAudio = type; btn.classList.add('playing');
                 }).catch(err => {
-                    console.warn("Autoplay bloqueado. O usuário precisa interagir primeiro.");
+                    console.warn("Autoplay bloqueado. Clique na página primeiro.");
                 });
             }
         }
 
         // ===========================================
-        // 7. MODAL LOGIC (IGUAL ANTES)
+        // 6. MODAL
         // ===========================================
-        function openConfig() { 
-            document.getElementById('configModal').style.display = 'flex'; 
-            updateHoursLabel(state.goalMinutes / 60);
-            document.getElementById('hoursInput').value = state.goalMinutes / 60;
-        }
+        function openConfig() { document.getElementById('configModal').style.display = 'flex'; updateHoursLabel(state.goalMinutes / 60); document.getElementById('hoursInput').value = state.goalMinutes / 60; }
+        function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
+        
         function selectTrack(el, type) {
             document.querySelectorAll('.track-option').forEach(e => e.classList.remove('selected'));
             el.classList.add('selected');
@@ -429,18 +391,13 @@
         function saveConfig() {
             const sel = document.querySelector('.track-option.selected');
             const type = sel ? (sel.dataset.tempType || 'med') : 'med';
-            state.track = type;
-            state.firstVisit = false;
-            
+            state.track = type; state.firstVisit = false;
             if (type === 'custom') {
                 const chips = document.querySelectorAll('.subject-chip.selected');
                 state.customSubjects = Array.from(chips).map(c => c.getAttribute('onclick').split("'")[1]);
             }
             state.goalMinutes = document.getElementById('hoursInput').value * 60;
-            saveState();
-            document.getElementById('configModal').style.display = 'none';
-            renderMissions();
-            resetTimer();
+            saveState(); closeConfig(); renderMissions(); resetTimer();
         }
     </script>
 </body>
