@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulados - Estuda.IA</title>
+    <title>Simulados Personalizados - Estuda.IA</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4F46E5">
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-</head>
+    </head>
 <body>
 
     <nav>
@@ -19,44 +19,54 @@
     <div class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
         
         <div id="menuScreen" style="width: 100%;">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="margin-bottom: 10px;">Escolha a Área</h1>
-                <p style="color:var(--text-muted);">Filtre as questões para focar no seu ponto fraco.</p>
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="margin-bottom: 10px;">Simulados</h1>
+                <p style="color:var(--text-muted);">Selecione a grande área para começar.</p>
             </div>
 
             <div class="subjects-grid">
-                <div class="subject-card" data-type="humanas" onclick="startQuiz('Humanas')">
+                <div class="subject-card" onclick="openSubMenu('Humanas')">
                     <span class="subject-icon">🏛️</span>
-                    <span class="subject-title">Ciências Humanas</span>
-                    <span class="subject-count">História, Geo, Filo</span>
+                    <span class="subject-title">Humanas</span>
                 </div>
-                <div class="subject-card" data-type="natureza" onclick="startQuiz('Natureza')">
+                <div class="subject-card" onclick="openSubMenu('Natureza')">
                     <span class="subject-icon">🧬</span>
-                    <span class="subject-title">Ciências da Natureza</span>
-                    <span class="subject-count">Bio, Quím, Fís</span>
+                    <span class="subject-title">Natureza</span>
                 </div>
-                <div class="subject-card" data-type="linguagens" onclick="startQuiz('Linguagens')">
+                <div class="subject-card" onclick="openSubMenu('Linguagens')">
                     <span class="subject-icon">📚</span>
                     <span class="subject-title">Linguagens</span>
-                    <span class="subject-count">Português, Lit, Artes</span>
                 </div>
-                <div class="subject-card" data-type="matematica" onclick="startQuiz('Matemática')">
+                <div class="subject-card" onclick="openSubMenu('Matemática')">
                     <span class="subject-icon">📐</span>
                     <span class="subject-title">Matemática</span>
-                    <span class="subject-count">Lógica, Geometria</span>
                 </div>
-                <div class="subject-card" onclick="startQuiz('Geral')" style="border-color: var(--primary);">
-                    <span class="subject-icon">🎲</span>
-                    <span class="subject-title">Simulado Geral</span>
-                    <span class="subject-count">Mistura de tudo</span>
+            </div>
+            
+            <div style="margin-top:20px; text-align:center;">
+                <button class="btn-outline" onclick="startQuizGlobal()" style="width:100%; max-width:300px;">🎲 Modo Aleatório (Tudo)</button>
+            </div>
+        </div>
+
+        <div id="selectionScreen" style="display: none; width: 100%; max-width: 500px;">
+            <div style="text-align:center;">
+                <h2 id="selectionTitle" style="margin-bottom:5px;">Matemática</h2>
+                <p style="color:var(--text-muted); font-size:0.9rem;">O que você quer treinar hoje?</p>
+            </div>
+
+            <div class="topics-grid" id="topicsContainer">
                 </div>
+
+            <div style="display:flex; gap:10px;">
+                <button class="btn-outline" onclick="backToMenu()" style="flex:1;">Voltar</button>
+                <button class="btn" onclick="confirmStart()" style="flex:1;">Iniciar Prova</button>
             </div>
         </div>
 
         <div id="quizScreen" class="quiz-container" style="display: none;">
             <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
                 <span class="badge-subject" id="subjectTag">Geral</span>
-                <span style="font-weight:600; color:var(--text-muted);">Questão <span id="qIndex">1</span>/5</span>
+                <span style="font-weight:600; color:var(--text-muted);">Questão <span id="qIndex">1</span>/<span id="qTotal">5</span></span>
             </div>
             <div class="question-text" id="questionText">...</div>
             <div class="options-grid" id="optionsContainer"></div>
@@ -67,66 +77,121 @@
             <h2 style="margin-bottom: 10px;">Resultado</h2>
             <div class="quiz-score" id="finalScore">0/5</div>
             <p id="feedbackText" style="margin-bottom: 30px; color:var(--text-muted);">...</p>
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn" onclick="location.reload()">Escolher Outra</button>
-            </div>
+            <button class="btn" onclick="location.reload()">Novo Simulado</button>
         </div>
 
     </div>
 
     <script>
-        // --- BANCO DE DADOS (Expandido e Categorizado) ---
+        // --- BANCO DE DADOS EXPANDIDO (COM SUBCATEGORIAS) ---
+        // 'cat' = Área Grande | 'sub' = Tópico Específico
         const database = [
-            // LINGUAGENS
-            { cat: "Linguagens", txt: "O que caracteriza a 'fuga ao tema' na redação?", opt: ["Erros gramaticais", "Não abordar o assunto central", "Texto curto", "Letra feia"], cor: 1 },
-            { cat: "Linguagens", txt: "Qual função da linguagem foca no receptor?", opt: ["Emotiva", "Metalinguística", "Conativa", "Referencial"], cor: 2 },
-            { cat: "Linguagens", txt: "O movimento Modernista de 1922 criticava:", opt: ["O Parnasianismo", "O Barroco", "O Realismo", "O Simbolismo"], cor: 0 },
-            
-            // HUMANAS
-            { cat: "Humanas", txt: "A 'Guerra Fria' foi um conflito ideológico entre:", opt: ["EUA e China", "Alemanha e França", "EUA e URSS", "Inglaterra e Japão"], cor: 2 },
-            { cat: "Humanas", txt: "O conceito de 'Mais-valia' pertence a:", opt: ["Max Weber", "Karl Marx", "Durkheim", "Adam Smith"], cor: 1 },
-            { cat: "Humanas", txt: "Qual o bioma predominante no Centro-Oeste?", opt: ["Amazônia", "Caatinga", "Cerrado", "Mata Atlântica"], cor: 2 },
+            // MATEMÁTICA
+            { cat: "Matemática", sub: "Geometria", txt: "A soma dos ângulos internos de um triângulo é:", opt: ["180°", "360°", "90°", "270°"], cor: 0 },
+            { cat: "Matemática", sub: "Geometria", txt: "Qual o volume de um cubo de aresta 2cm?", opt: ["4cm³", "6cm³", "8cm³", "16cm³"], cor: 2 },
+            { cat: "Matemática", sub: "Álgebra", txt: "Quanto é 20% de 500?", opt: ["50", "100", "150", "200"], cor: 1 },
+            { cat: "Matemática", sub: "Álgebra", txt: "Resolva: 2x + 10 = 20", opt: ["x = 10", "x = 5", "x = 2", "x = 0"], cor: 1 },
+            { cat: "Matemática", sub: "Estatística", txt: "A média aritmética de 5, 10 e 15 é:", opt: ["5", "10", "15", "20"], cor: 1 },
 
             // NATUREZA
-            { cat: "Natureza", txt: "Qual a organela responsável pela respiração celular?", opt: ["Ribossomo", "Mitocôndria", "Lisossomo", "Golgi"], cor: 1 },
-            { cat: "Natureza", txt: "Na tabela periódica, o 'Na' representa:", opt: ["Nitrogênio", "Níquel", "Sódio", "Neônio"], cor: 2 },
-            { cat: "Natureza", txt: "A 1ª Lei de Newton é conhecida como:", opt: ["Lei da Ação e Reação", "Lei da Inércia", "Lei da Gravidade", "Lei da Força"], cor: 1 },
+            { cat: "Natureza", sub: "Biologia", txt: "Organela da respiração celular:", opt: ["Ribossomo", "Mitocôndria", "Lisossomo", "Golgi"], cor: 1 },
+            { cat: "Natureza", sub: "Química", txt: "Símbolo do Sódio na tabela:", opt: ["So", "Ni", "Na", "No"], cor: 2 },
+            { cat: "Natureza", sub: "Física", txt: "A 1ª Lei de Newton é a lei da:", opt: ["Inércia", "Ação e Reação", "Gravidade", "Força"], cor: 0 },
+            { cat: "Natureza", sub: "Física", txt: "V = ΔS / Δt calcula:", opt: ["Aceleração", "Velocidade Média", "Força", "Trabalho"], cor: 1 },
 
-            // MATEMÁTICA
-            { cat: "Matemática", txt: "Quanto é 20% de 500?", opt: ["50", "100", "150", "200"], cor: 1 },
-            { cat: "Matemática", txt: "A soma dos ângulos internos de um triângulo é:", opt: ["180°", "360°", "90°", "270°"], cor: 0 },
-            { cat: "Matemática", txt: "Bhaskara é usada para equações de qual grau?", opt: ["Primeiro", "Segundo", "Terceiro", "Quarto"], cor: 1 }
+            // HUMANAS
+            { cat: "Humanas", sub: "História", txt: "A Guerra Fria foi entre:", opt: ["EUA e China", "EUA e URSS", "Alemanha e França", "Inglaterra e Japão"], cor: 1 },
+            { cat: "Humanas", sub: "História", txt: "Presidente que construiu Brasília:", opt: ["Vargas", "Kubitschek", "Jânio", "Collor"], cor: 1 },
+            { cat: "Humanas", sub: "Geografia", txt: "Bioma predominante no Centro-Oeste:", opt: ["Amazônia", "Caatinga", "Cerrado", "Pampa"], cor: 2 },
+            { cat: "Humanas", sub: "Filosofia", txt: "Autor do mito da caverna:", opt: ["Sócrates", "Platão", "Aristóteles", "Descartes"], cor: 1 },
+
+            // LINGUAGENS
+            { cat: "Linguagens", sub: "Gramática", txt: "Qual palavra é oxítona?", opt: ["Mesa", "Lápis", "Café", "Árvore"], cor: 2 },
+            { cat: "Linguagens", sub: "Literatura", txt: "Autor de Dom Casmurro:", opt: ["Jorge Amado", "Machado de Assis", "Alencar", "Clarice"], cor: 1 },
+            { cat: "Linguagens", sub: "Artes", txt: "Movimento da Semana de 22:", opt: ["Modernismo", "Barroco", "Romantismo", "Realismo"], cor: 0 }
         ];
 
-        // Variáveis de Estado
+        // --- ESTADO ---
         let quizPool = [];
         let currentIndex = 0;
         let score = 0;
+        let currentCategory = "";
 
-        function startQuiz(category) {
-            // Filtra por matéria ou pega tudo
-            if (category === 'Geral') {
-                quizPool = database.sort(() => 0.5 - Math.random()).slice(0, 5);
-            } else {
-                // Filtra pelo nome da categoria (ex: Humanas)
-                const filtered = database.filter(q => q.cat.includes(category) || (category === 'Natureza' && q.cat === 'Natureza'));
-                // Se tiver poucas perguntas, repete algumas (no futuro terá banco maior)
-                quizPool = filtered.sort(() => 0.5 - Math.random()).slice(0, 5);
+        // --- PASSO 1: ABRIR MENU DE SELEÇÃO ---
+        function openSubMenu(category) {
+            currentCategory = category;
+            
+            // Filtra o banco para achar apenas os Tópicos (sub) dessa Categoria
+            const questionsOfCat = database.filter(q => q.cat === category);
+            // Cria uma lista única de subtemas (Ex: [Geometria, Álgebra, Estatística])
+            const subTopics = [...new Set(questionsOfCat.map(q => q.sub))];
+
+            document.getElementById('selectionTitle').innerText = category;
+            const container = document.getElementById('topicsContainer');
+            container.innerHTML = '';
+
+            // Se não tiver subtopicos cadastrados ainda
+            if (subTopics.length === 0) {
+                alert("Ainda estamos cadastrando questões dessa área!");
+                return;
             }
 
-            if(quizPool.length === 0) return alert("Em breve mais questões dessa matéria!");
+            // Gera os Checkboxes
+            subTopics.forEach(topic => {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <input type="checkbox" id="check_${topic}" value="${topic}" class="topic-checkbox" checked>
+                    <label for="check_${topic}" class="topic-label">${topic}</label>
+                `;
+                container.appendChild(wrapper);
+            });
+
+            // Troca tela
+            document.getElementById('menuScreen').style.display = 'none';
+            document.getElementById('selectionScreen').style.display = 'block';
+        }
+
+        // --- PASSO 2: INICIAR O QUIZ COM OS FILTROS ---
+        function confirmStart() {
+            // Pega todos os checkboxes marcados
+            const checkedBoxes = document.querySelectorAll('.topic-checkbox:checked');
+            const selectedTopics = Array.from(checkedBoxes).map(cb => cb.value);
+
+            if (selectedTopics.length === 0) {
+                alert("Selecione pelo menos um tópico!");
+                return;
+            }
+
+            // Filtra o banco: Tem que ser da Categoria Certa E estar na lista de Tópicos Selecionados
+            quizPool = database.filter(q => q.cat === currentCategory && selectedTopics.includes(q.sub));
+
+            // Embaralha e pega 5
+            quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 5);
+
+            if (quizPool.length === 0) return alert("Erro interno: Nenhuma questão encontrada.");
+
+            startQuizEngine(selectedTopics.join(', '));
+        }
+
+        function startQuizGlobal() {
+            quizPool = database.sort(() => 0.5 - Math.random()).slice(0, 10);
+            startQuizEngine("Geral");
+        }
+
+        function startQuizEngine(label) {
+            document.getElementById('selectionScreen').style.display = 'none';
+            document.getElementById('menuScreen').style.display = 'none';
+            document.getElementById('quizScreen').style.display = 'block';
 
             currentIndex = 0;
             score = 0;
-            document.getElementById('subjectTag').innerText = category;
-            
-            // Troca de tela
-            document.getElementById('menuScreen').style.display = 'none';
-            document.getElementById('quizScreen').style.display = 'block';
+            document.getElementById('subjectTag').innerText = label.length > 20 ? label.substring(0, 20) + "..." : label;
+            document.getElementById('qTotal').innerText = quizPool.length;
             
             loadQuestion();
         }
 
+        // --- SISTEMA DO QUIZ (IGUAL ANTES) ---
         function loadQuestion() {
             const q = quizPool[currentIndex];
             document.getElementById('qIndex').innerText = currentIndex + 1;
@@ -153,7 +218,7 @@
                 score++;
             } else {
                 btn.classList.add('wrong');
-                allBtns[correct].classList.add('correct'); // Mostra a certa
+                allBtns[correct].classList.add('correct');
             }
 
             setTimeout(() => {
@@ -169,19 +234,25 @@
             document.getElementById('finalScore').innerText = `${score}/${quizPool.length}`;
             
             const msg = document.getElementById('feedbackText');
-            if (score === quizPool.length) msg.innerText = "Gabaritou! Você é uma máquina! 🤖";
-            else if (score > quizPool.length / 2) msg.innerText = "Mandou bem! Continue assim.";
-            else msg.innerText = "Não desanime, revise o conteúdo!";
+            if (score === quizPool.length) msg.innerText = "Gabaritou! Você é o mestre!";
+            else if (score > quizPool.length / 2) msg.innerText = "Mandou bem!";
+            else msg.innerText = "Bora revisar mais um pouco?";
         }
 
-        // --- AUTO-START VIA CRONOGRAMA ---
-        // Verifica se o cronograma mandou abrir algo específico
+        function backToMenu() {
+            document.getElementById('selectionScreen').style.display = 'none';
+            document.getElementById('menuScreen').style.display = 'block';
+        }
+
+        // Integração com Cronograma (Se vier linkado de lá)
         const autoStart = localStorage.getItem('simulado_auto_start');
         if (autoStart) {
-            // Limpa para não rodar sempre que der F5
             localStorage.removeItem('simulado_auto_start');
-            // Inicia o quiz automaticamente
-            startQuiz(autoStart);
+            // Mapeia os códigos do cronograma para nomes bonitos
+            const map = { 'mat': 'Matemática', 'red': 'Linguagens', 'nat': 'Natureza', 'hum': 'Humanas' };
+            const cat = map[autoStart] || 'Geral';
+            if (cat === 'Geral') startQuizGlobal();
+            else openSubMenu(cat); // Abre o menu de seleção ao invés de ir direto
         }
     </script>
 </body>
