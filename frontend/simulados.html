@@ -6,7 +6,7 @@
     <title>Simulados Pro - Estuda.IA</title>
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         .topics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; text-align: left; }
         .topic-checkbox { display: none; }
@@ -20,7 +20,7 @@
 
     <div id="loadingScreen" class="loading-screen">
         <div class="loader"></div>
-        <p style="margin-top:15px; color:var(--text-muted)">Sincronizando seu progresso...</p>
+        <p style="margin-top:15px; color:var(--text-muted)">Conectando ao servidor...</p>
     </div>
 
     <nav>
@@ -81,16 +81,8 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO SUPABASE ---
-        // (Substitua pelas suas chaves do Render/Supabase se não pegar do server, 
-        // mas aqui vamos usar hardcoded ou variáveis se vc tiver um arquivo config)
-        
-        // 🚨 IMPORTANTE: Coloque suas chaves reais aqui para o teste!
-        const SUPABASE_URL = 'SUA_URL_SUPABASE_AQUI'; 
-        const SUPABASE_KEY = 'SUA_KEY_ANON_AQUI';
-        
-        // Se já tiver client global, usa ele, senão cria um novo
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+        // --- 1. CONFIGURAÇÃO API ---
+        const API_BASE = "https://backend-redacao.onrender.com/api/simulados";
 
         // Recupera ID do usuário
         let userId = localStorage.getItem('estuda_ia_userid');
@@ -99,8 +91,7 @@
             localStorage.setItem('estuda_ia_userid', userId);
         }
 
-        // --- 2. BANCO DE QUESTÕES COM IDs (SISTEMA DE CÓDIGOS) ---
-        // IDs: [CAT]-[SUB]-[NUMERO]
+        // --- 2. BANCO DE QUESTÕES NO FRONT (Zero custo de BD) ---
         const database = [
             // MATEMÁTICA - GEOMETRIA
             { id: "MAT-GEO-001", cat: "Matemática", sub: "Geometria", txt: "A soma dos ângulos internos de um triângulo é:", opt: ["180°", "360°", "90°", "270°"], cor: 0 },
@@ -120,63 +111,48 @@
             { id: "HUM-HIS-002", cat: "Humanas", sub: "História", txt: "Era Vargas durou de:", opt: ["1930-1945", "1964-1985", "1889-1930", "1500-1822"], cor: 0 },
             
             // LINGUAGENS - GRAMÁTICA
-            { id: "LIN-GRA-001", cat: "Linguagens", sub: "Gramática", txt: "Antônimo de 'efêmero':", opt: ["Rápido", "Passageiro", "Duradouro", "Breve"], cor: 2 },
-            
-            // ... ADICIONE MAIS 390 QUESTÕES AQUI SEGUINDO O PADRÃO DE ID ...
+            { id: "LIN-GRA-001", cat: "Linguagens", sub: "Gramática", txt: "Antônimo de 'efêmero':", opt: ["Rápido", "Passageiro", "Duradouro", "Breve"], cor: 2 }
         ];
 
-        // --- 3. ESTADO DO APLICATIVO ---
-        let doneQuestions = new Set(); // Conjunto de IDs já feitos
+        // --- 3. ESTADO ---
+        let doneQuestions = new Set();
         let quizPool = [];
         let currentIndex = 0;
         let score = 0;
         let currentCategory = "";
-        let sessionAnsweredIDs = []; // IDs respondidos NESTA sessão para salvar depois
+        let sessionAnsweredIDs = [];
 
-        // --- 4. INICIALIZAÇÃO E SINCRONIA ---
+        // --- 4. INICIALIZAÇÃO (FETCH DO BACKEND) ---
         window.onload = async function() {
-            if(!supabase) {
-                alert("Configure as chaves do Supabase no código!");
-                document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('menuScreen').style.display = 'block';
-                return;
-            }
-
             try {
-                // Busca no BD quais questões esse usuário já fez
-                const { data, error } = await supabase
-                    .from('questoes_feitas')
-                    .select('question_id')
-                    .eq('user_id', userId);
+                // Chama a API para pegar os IDs já feitos
+                const response = await fetch(`${API_BASE}/progresso/${userId}`);
                 
-                if (error) throw error;
-
-                // Armazena no Set para consulta rápida
-                data.forEach(item => doneQuestions.add(item.question_id));
+                if(!response.ok) throw new Error("Erro na API");
                 
-                // Calcula estatísticas
+                const data = await response.json();
+                
+                // Popula o Set com os IDs que vieram do banco
+                data.ids.forEach(id => doneQuestions.add(id));
+                
                 const totalFeitas = doneQuestions.size;
                 const totalDisponivel = database.length;
                 document.getElementById('progressoTotal').innerText = `Você já dominou ${totalFeitas} de ${totalDisponivel} questões!`;
 
             } catch (err) {
                 console.error("Erro ao sincronizar:", err);
+                document.getElementById('progressoTotal').innerText = "Modo Offline (Progresso não sincronizado)";
             } finally {
                 document.getElementById('loadingScreen').style.display = 'none';
                 document.getElementById('menuScreen').style.display = 'block';
-                
-                // Auto-start do cronograma
                 checkAutoStart();
             }
         };
 
-        // --- 5. LÓGICA DE SELEÇÃO E FILTRO ---
+        // --- 5. UI LÓGICA ---
         function openSubMenu(category) {
             currentCategory = category;
             const catQuestions = database.filter(q => q.cat === category);
-            
-            // Filtra subtópicos que ainda têm questões disponíveis
-            // Se o aluno zerou Geometria, não mostra ou avisa
             const subTopics = [...new Set(catQuestions.map(q => q.sub))];
 
             document.getElementById('selectionTitle').innerText = category;
@@ -186,13 +162,11 @@
             if (subTopics.length === 0) return alert("Em breve!");
 
             subTopics.forEach(topic => {
-                // Conta quantas faltam desse tópico
                 const totalTopic = catQuestions.filter(q => q.sub === topic).length;
                 const feitasTopic = catQuestions.filter(q => q.sub === topic && doneQuestions.has(q.id)).length;
                 const disponiveis = totalTopic - feitasTopic;
 
                 const wrapper = document.createElement('div');
-                // Se não tem disponível, desabilita
                 const disabled = disponiveis === 0 ? 'disabled' : '';
                 const labelText = disponiveis === 0 ? `${topic} (Zerado ✅)` : `${topic} (${disponiveis})`;
 
@@ -215,14 +189,12 @@
 
             if (selectedTopics.length === 0) return alert("Selecione um tópico ou você já zerou tudo!");
 
-            // O FILTRO DE OURO: Categoria certa + Tópico certo + NÃO FEITA AINDA
             quizPool = database.filter(q => 
                 q.cat === currentCategory && 
                 selectedTopics.includes(q.sub) && 
-                !doneQuestions.has(q.id) // <--- A MÁGICA ACONTECE AQUI
+                !doneQuestions.has(q.id)
             );
 
-            // Se sobrar poucas (ex: 2), pega só as 2. Se tiver muitas, pega 5.
             quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 5);
 
             if (quizPool.length === 0) return alert("Você já completou todas as questões desses tópicos! Parabéns!");
@@ -231,12 +203,9 @@
         }
 
         function startQuizGlobal() {
-            // Pega qualquer questão não feita
             quizPool = database.filter(q => !doneQuestions.has(q.id));
             quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 10);
-            
             if (quizPool.length === 0) return alert("Você zerou o banco de dados inteiro! Uau!");
-            
             startQuizEngine("Modo Aleatório");
         }
 
@@ -247,14 +216,14 @@
 
             currentIndex = 0;
             score = 0;
-            sessionAnsweredIDs = []; // Reseta a lista de feitos nessa rodada
+            sessionAnsweredIDs = [];
             document.getElementById('subjectTag').innerText = label.length > 20 ? label.substring(0, 15) + "..." : label;
             document.getElementById('qTotal').innerText = quizPool.length;
             
             loadQuestion();
         }
 
-        // --- 6. QUIZ ENGINE ---
+        // --- 6. QUIZ ---
         function loadQuestion() {
             const q = quizPool[currentIndex];
             document.getElementById('qIndex').innerText = currentIndex + 1;
@@ -267,7 +236,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = opt;
-                btn.onclick = () => checkAnswer(index, q.cor, btn, q.id); // Passa o ID
+                btn.onclick = () => checkAnswer(index, q.cor, btn, q.id);
                 container.appendChild(btn);
             });
         }
@@ -276,8 +245,6 @@
             const allBtns = document.querySelectorAll('.option-btn');
             allBtns.forEach(b => b.disabled = true);
 
-            // Marca como respondida (independente se acertou ou errou, ele "viu" a questão)
-            // Se você quiser que só marque se acertar, coloque isso dentro do if abaixo
             sessionAnsweredIDs.push(questionID);
 
             if (selected === correct) {
@@ -295,30 +262,34 @@
             }, 1500);
         }
 
-        // --- 7. FINALIZAÇÃO E SALVAMENTO ---
+        // --- 7. FINALIZAR (FETCH POST) ---
         async function finishQuiz() {
             document.getElementById('quizScreen').style.display = 'none';
             document.getElementById('resultScreen').style.display = 'block';
             document.getElementById('finalScore').innerText = `${score}/${quizPool.length}`;
-            document.getElementById('feedbackText').innerText = "Salvando seu progresso na nuvem...";
+            document.getElementById('feedbackText').innerText = "Salvando na nuvem...";
 
-            // Salva no Supabase
             if (sessionAnsweredIDs.length > 0) {
-                const rows = sessionAnsweredIDs.map(qid => ({
-                    user_id: userId,
-                    question_id: qid
-                }));
-
                 try {
-                    const { error } = await supabase.from('questoes_feitas').insert(rows);
-                    if (error) throw error;
-                    
-                    // Atualiza localmente para não precisar recarregar página
+                    // Manda para o Backend salvar
+                    const response = await fetch(`${API_BASE}/concluir`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: userId,
+                            questionIds: sessionAnsweredIDs
+                        })
+                    });
+
+                    if(!response.ok) throw new Error("Erro ao salvar");
+
+                    // Atualiza local
                     sessionAnsweredIDs.forEach(id => doneQuestions.add(id));
-                    document.getElementById('feedbackText').innerText = "Progresso salvo! Essas questões não aparecerão novamente.";
+                    document.getElementById('feedbackText').innerText = "Progresso salvo! Questões não se repetirão.";
+
                 } catch (e) {
                     console.error(e);
-                    document.getElementById('feedbackText').innerText = "Erro ao salvar progresso (Offline?).";
+                    document.getElementById('feedbackText').innerText = "Erro ao salvar (Tente novamente).";
                 }
             }
         }
@@ -337,7 +308,6 @@
                 if(cat) openSubMenu(cat);
             }
         }
-
     </script>
 </body>
 </html>
