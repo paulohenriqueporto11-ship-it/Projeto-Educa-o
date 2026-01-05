@@ -1,39 +1,42 @@
 const { createClient } = require('@supabase/supabase-js');
-// Certifique-se que o caminho da engine está correto
+// Importa sua engine artesanal
 const { corrigirRedacao } = require('../ia_engine/corretor'); 
 require('dotenv').config();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// 1. Enviar Redação (Correção e Salvamento)
+// 1. Enviar Redação
 async function enviarRedacao(req, res) {
     const { texto, tema, userId } = req.body;
 
-    // Validação básica
+    // Validação básica do texto
     if (!texto || texto.length < 50) {
-        return res.status(400).json({ erro: 'Texto muito curto ou vazio.' });
+        return res.status(400).json({ erro: 'Texto muito curto. Escreva pelo menos 50 caracteres.' });
     }
 
     try {
-        console.log(`📝 Iniciando correção para User: ${userId} | Tema: ${tema}`);
+        console.log(`📝 Iniciando correção (Engine Artesanal) | User: ${userId}`);
 
-        // --- CORREÇÃO CRÍTICA AQUI (Adicionei o AWAIT) ---
-        // Sem o await, o código não esperava a IA terminar e quebrava.
-       const resultadoIA = await corrigirRedacao(texto, tema);
+        // --- CHAMADA DA SUA ENGINE ---
+        // Como sua engine é síncrona (não usa API externa), o await é opcional mas seguro.
+        const resultadoIA = await corrigirRedacao(texto, tema || "Livre");
 
-        // Verifica se a IA devolveu algo válido
-        if (!resultadoIA || !resultadoIA.notaFinal) {
-            throw new Error("A IA não retornou uma nota válida.");
+        // --- VALIDAÇÃO DO RETORNO ---
+        // Se a sua engine retornou erro ou nota inválida
+        if (!resultadoIA || typeof resultadoIA.notaFinal === 'undefined') {
+            console.error("Erro na Engine:", resultadoIA);
+            // Retorna o erro específico que a engine gerou (ex: "Texto muito curto")
+            return res.status(400).json({ erro: resultadoIA.erro || "Falha na correção." });
         }
 
-        // Salva no Supabase
+        // --- SALVA NO SUPABASE ---
         const { data, error } = await supabase
             .from('redacoes')
             .insert([{ 
                 texto_redacao: texto, 
                 tema: tema,
                 nota_geral: resultadoIA.notaFinal, 
-                detalhes_json: resultadoIA, // Salva o feedback completo
+                detalhes_json: resultadoIA, // Salva o feedback completo das competências
                 user_id: userId || 'anonimo' 
             }]);
 
@@ -42,16 +45,16 @@ async function enviarRedacao(req, res) {
             throw new Error("Erro ao salvar no banco de dados.");
         }
 
-        console.log("✅ Redação salva com sucesso! Nota:", resultadoIA.notaFinal);
+        console.log("✅ Sucesso! Nota:", resultadoIA.notaFinal);
         res.json({ sucesso: true, resultado: resultadoIA });
 
     } catch (err) {
-        console.error("❌ Erro fatal no controller:", err.message);
-        res.status(500).json({ erro: 'Erro interno ao corrigir redação.' });
+        console.error("❌ Erro fatal:", err.message);
+        res.status(500).json({ erro: 'Erro interno no servidor.' });
     }
 }
 
-// 2. Obter Estatísticas (Para o Dashboard)
+// 2. Obter Estatísticas (Dashboard)
 async function obterEstatisticas(req, res) {
     const { userId } = req.query;
 
@@ -66,7 +69,6 @@ async function obterEstatisticas(req, res) {
         if (error) throw error;
 
         const total = data.length;
-        // Calcula média simples
         const soma = data.reduce((acc, curr) => acc + (curr.nota_geral || 0), 0);
         const media = total > 0 ? Math.round(soma / total) : 0;
 
