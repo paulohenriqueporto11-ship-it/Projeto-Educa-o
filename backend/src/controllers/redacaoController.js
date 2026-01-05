@@ -19,7 +19,7 @@ async function enviarRedacao(req, res) {
 
         // --- CORREÇÃO CRÍTICA AQUI (Adicionei o AWAIT) ---
         // Sem o await, o código não esperava a IA terminar e quebrava.
-        const resultadoIA = await corrigirRedacao(texto, tema || "Livre");
+       const resultadoIA = await corrigirRedacao(texto, tema);
 
         // Verifica se a IA devolveu algo válido
         if (!resultadoIA || !resultadoIA.notaFinal) {
