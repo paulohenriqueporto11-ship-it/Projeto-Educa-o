@@ -1,5 +1,5 @@
 // src/ia_engine/corretor.js
-// VERSÃO 20.0 - STABLE (Correções do Analista ENEM)
+// VERSÃO 21.0 - FINAL POLISHED (Ajustes Finos do Analista)
 
 // =================================================================
 // ⚙️ CONFIGURAÇÕES
@@ -7,12 +7,12 @@
 const CONFIG = {
     PONTOS: {
         MAX: 200,
-        MIN_SAFETY: 40, // Nota mínima ajustada (era 60)
+        MIN_SAFETY: 40,
         PENALIDADE: {
-            LEVE: 20,    // Aumentei penalidade leve (era 10)
-            MEDIA: 40,   // Aumentei (era 20)
-            GRAVE: 60,   // Aumentei (era 40)
-            FATAL: 120,  // Aumentei (era 80)
+            LEVE: 20,
+            MEDIA: 40,
+            GRAVE: 60,
+            FATAL: 120,
             REPETICAO: 10,
             FRASE_LONGA_BASE: 10
         },
@@ -24,16 +24,16 @@ const CONFIG = {
     LIMITES: {
         MIN_PALAVRAS: 50,
         MIN_VOCABULARIO_UNICO: 0.22, 
-        FRASE_LONGA_QTD: 35, // Mais rigoroso
+        FRASE_LONGA_QTD: 35,
         FRASE_LONGA_COM_PONTUACAO: 55,
         MAX_REPETICAO_CONECTIVO: 3, 
         MIN_PARAGRAFOS: 3,
-        MIN_DENSIDADE_COESIVA: 0.035 // FIXO (Solicitação do Analista)
+        MIN_DENSIDADE_COESIVA: 0.035
     }
 };
 
 // =================================================================
-// 📚 LÉXICO (MANTIDO IGUAL)
+// 📚 LÉXICO
 // =================================================================
 const LEXICO = {
     ERROS_COMUNS: [
@@ -61,14 +61,15 @@ const LEXICO = {
         'evidenciar', 'evidencia'
     ],
 
+    // ATUALIZAÇÃO (Regex): Adicionadas variações plurais para evitar falso negativo
     CONECTIVOS_TRANSICAO: [
         'além disso', 'visto que', 'dessa forma', 'em suma', 'nesse sentido', 
         'sob esse viés', 'diante disso', 'em contrapartida', 'primeiramente', 
         'por fim', 'em síntese', 'dessa maneira', 'outro fator', 'vale ressaltar', 
         'no brasil', 'por outro lado', 'sendo assim', 'posto que', 'haja vista', 
-        'em virtude de', 'por conseguinte', 'portanto', 'entretanto', 'contudo', 
-        'todavia', 'consequentemente', 'outrossim', 'adicionando', 'assim', 'logo', 
-        'ademais', 'mas', 'porém'
+        'em virtude de', 'em virtude das', 'em virtude dos', 'por conseguinte', 
+        'portanto', 'entretanto', 'contudo', 'todavia', 'consequentemente', 
+        'outrossim', 'adicionando', 'assim', 'logo', 'ademais', 'mas', 'porém'
     ],
 
     REFERENCIAS: [
@@ -221,8 +222,13 @@ function analisarC1(texto, tokens, frases, resC1) {
         penalizar(resC1, Math.min(80, Math.floor(penalidadeFraseAcumulada)), "Fluidez", "Frases muito extensas.", "Dificulta a leitura.", "Use mais pontos finais.", 'media');
     }
 
-    // 4. Repetição
-    const limiteRepeticao = Math.max(4, Math.floor(tokens.length * 0.015)); // Mais rigoroso
+    // ATUALIZAÇÃO (Analista): Uso efetivo do detector de frases repetidas
+    if (detectarRepeticaoFrases(frases)) {
+        penalizar(resC1, CONFIG.PONTOS.PENALIDADE.GRAVE, "Repetição", "Frases inteiras repetidas.", "Ideia circular.", "Evite copiar frases anteriores.", 'alta');
+    }
+
+    // 4. Repetição de Palavras
+    const limiteRepeticao = Math.max(4, Math.floor(tokens.length * 0.015)); 
     const contagem = {};
     tokensNorm.forEach(t => {
         if (t.length > 4 && isNaN(t)) contagem[t] = (contagem[t] || 0) + 1;
@@ -265,9 +271,11 @@ function analisarC2(textoNorm, temaNorm, paragrafos, resC2) {
         penalizar(resC2, desconto, "Tema", "Abordagem parcial.", "Tangenciamento.", "Explore todos os termos do tema.", 'alta');
     }
 
+    // ATUALIZAÇÃO (Analista): Penalidade proporcional ao número de parágrafos faltantes
     if (paragrafos.length < CONFIG.LIMITES.MIN_PARAGRAFOS) {
-        const pts = paragrafos.length === 2 ? 60 : 120; // Penalidade maior
-        penalizar(resC2, pts, "Estrutura", "Estrutura incompleta.", `Apenas ${paragrafos.length} parágrafos.`, "Escreva Intro, Desenv. e Conclusão.", 'alta');
+        const faltantes = CONFIG.LIMITES.MIN_PARAGRAFOS - paragrafos.length;
+        const penalidadeProporcional = faltantes * 60; // 1 falta = -60, 2 faltam = -120
+        penalizar(resC2, penalidadeProporcional, "Estrutura", "Estrutura incompleta.", `Apenas ${paragrafos.length} parágrafos.`, "Escreva Intro, Desenv. e Conclusão.", 'alta');
     }
     
     resC2.nota = Math.max(CONFIG.PONTOS.MIN_SAFETY, resC2.nota);
@@ -279,7 +287,7 @@ function analisarC3(textoLower, resC3) {
 
     const forcaArgumentativa = (countExpl * 0.5) + (countVerbos * 0.8);
 
-    if (forcaArgumentativa < 4) { // Mais exigente (era 3)
+    if (forcaArgumentativa < 4) { 
         penalizar(resC3, 60, "Argumentação", "Falta aprofundamento.", "Argumentos expositivos.", "Use 'pois', 'visto que' ou verbos de impacto.", 'alta');
     } else if (forcaArgumentativa < 8) {
         penalizar(resC3, 40, "Desenvolvimento", "Argumentação tímida.", "Ideias pouco exploradas.", "Detalhe mais consequências.", 'media');
@@ -288,9 +296,12 @@ function analisarC3(textoLower, resC3) {
     const temAutoridade = CACHE.AUTORIDADE_REGEX.test(textoLower);
     const temGenerico = contemTermo(textoLower, LEXICO.REPERTORIO_GENERICO);
 
-    // CORREÇÃO (Analista): Só penaliza se não tiver nada. Só dá bônus se o texto for forte.
+    // ATUALIZAÇÃO (Analista): Diferenciar Genérico de Nada
     if (!temAutoridade && !temGenerico) {
         penalizar(resC3, 80, "Repertório", "Sem repertório externo.", "Texto baseado no senso comum.", "Cite dados, leis ou autores.", 'alta');
+    } else if (temGenerico && !temAutoridade) {
+        // Repertório Genérico existe: penalidade menor que zero absoluto, mas ainda perde
+        penalizar(resC3, 40, "Repertório", "Repertório Genérico.", "Baseado em notícias/senso comum.", "Legitime com autoridade (livros, leis).", 'media');
     } else if (temAutoridade && forcaArgumentativa > 5) {
         // Só dá bônus se tiver argumentação mínima para sustentar a autoridade
         resC3.nota = Math.min(200, resC3.nota + CONFIG.PONTOS.BONUS.AUTORIDADE);
@@ -312,12 +323,11 @@ function analisarC4(textoLower, tokens, paragrafos, resC4) {
         totalCoesivos += (qtd * 0.6);
     });
 
-    // CORREÇÃO (Analista): Densidade fixa e não dependente do tamanho
-    const densidadeAlvo = CONFIG.LIMITES.MIN_DENSIDADE_COESIVA; // 0.035
+    const densidadeAlvo = CONFIG.LIMITES.MIN_DENSIDADE_COESIVA; 
     const densidadeAtual = totalCoesivos / (tokens.length || 1);
 
     if (densidadeAtual < densidadeAlvo) {
-        const penalidade = Math.floor((densidadeAlvo - densidadeAtual) * 2000); // Fórmula de penalidade proporcional
+        const penalidade = Math.floor((densidadeAlvo - densidadeAtual) * 2000); 
         penalizar(resC4, Math.min(80, penalidade), "Coesão", "Texto desconexo.", "Baixa densidade de elementos de ligação.", "Use mais conectivos.", 'alta');
     }
 
@@ -347,7 +357,7 @@ function analisarC5(paragrafos, resC5) {
     
     resC5.nota = 0; 
     let elementosEncontrados = 0;
-    let tiposEncontrados = new Set(); // CORREÇÃO: Usar Set para garantir elementos ÚNICOS
+    let tiposEncontrados = new Set();
     let erros = [];
 
     CACHE.C5.forEach(el => {
@@ -359,11 +369,8 @@ function analisarC5(paragrafos, resC5) {
         }
     });
 
-    // CORREÇÃO (Analista): Cada tipo único vale 40pts.
-    // 4 tipos = 160pts. O 5º elemento (Detalhamento) vem do tamanho/riqueza.
     let notaBase = tiposEncontrados.size * 40;
 
-    // Verifica Detalhamento (Simulado por tamanho se já tiver base sólida)
     const temDetalhamento = (textoConclusao.length > 120 && tiposEncontrados.size >= 3);
     if (temDetalhamento) {
         notaBase += 40;
@@ -375,7 +382,6 @@ function analisarC5(paragrafos, resC5) {
         const errosPrioritarios = erros.filter(e => e.includes('AGENTE') || e.includes('AÇÃO'));
         const msgErro = errosPrioritarios.length > 0 ? errosPrioritarios.join(", ") : erros.slice(0, 2).join(", ");
         
-        // Se a nota for muito baixa (ex: 0 ou 40), força aviso de proposta vaga
         if (resC5.nota <= 40) {
              resC5.erros.push({ tipo: "Competência 5", descricao: "Proposta Inexistente ou Vaga.", exemplo: "Elementos centrais não identificados.", acao: "Quem? O quê? Como? Para quê?", severidade: 'alta' });
         } else {
@@ -421,7 +427,9 @@ function corrigirRedacao(texto, tema) {
 
         const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
         const ratio = uniqueTokens.size / (tokens.length || 1);
-        const minVocabDinamico = Math.max(0.15, CONFIG.LIMITES.MIN_VOCABULARIO_UNICO - (50 / (tokens.length || 1)));
+        
+        // ATUALIZAÇÃO (Analista): Teto de 0.25 para não inflar textos curtos
+        const minVocabDinamico = Math.min(0.25, Math.max(0.15, CONFIG.LIMITES.MIN_VOCABULARIO_UNICO - (50 / (tokens.length || 1))));
         
         if (ratio < minVocabDinamico) {
             zerarNotas(resultado);
