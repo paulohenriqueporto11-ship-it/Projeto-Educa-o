@@ -6,30 +6,29 @@
     <title>Minha Rotina - Estuda.IA 2.0</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="assets/css/style.css">
-
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <audio id="audio-rain" loop src="https://actions.google.com/sounds/v1/weather/heavy_rain.ogg"></audio>
-    <audio id="audio-lofi" loop src="https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"></audio> <audio id="audio-white" loop src="https://actions.google.com/sounds/v1/water/air_conditioner_hum.ogg"></audio>
+    <audio id="audio-rain" loop preload="none" src="https://actions.google.com/sounds/v1/weather/heavy_rain.ogg"></audio>
+    <audio id="audio-lofi" loop preload="none" src="https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"></audio>
+    <audio id="audio-white" loop preload="none" src="https://actions.google.com/sounds/v1/water/air_conditioner_hum.ogg"></audio>
 
     <div id="configModal" class="modal-overlay" style="display:none;"> 
         <div class="modal-box">
-            <h2>🚀 Seu Cronograma</h2>
-            <p style="color:var(--text-muted); margin-bottom:20px;">O que vamos destruir hoje?</p>
+            <h2>🚀 Setup Inicial</h2>
+            <p style="color:var(--text-muted); margin-bottom:20px;">Configure seu plano de ataque.</p>
 
-            <label style="font-weight:600;">Escolha o Foco:</label>
+            <label style="font-weight:600;">Sua Trilha:</label>
             <div class="track-grid" id="trackSelector">
                 <div class="track-option" onclick="selectTrack(this, 'med')">🩺 Saúde</div>
                 <div class="track-option" onclick="selectTrack(this, 'eng')">📐 Exatas</div>
                 <div class="track-option" onclick="selectTrack(this, 'hum')">⚖️ Humanas</div>
-                <div class="track-option" onclick="selectTrack(this, 'custom')">⚙️ Personalizado</div>
+                <div class="track-option" onclick="selectTrack(this, 'custom')">⚙️ Custom</div>
             </div>
 
             <div id="customArea" class="custom-track-input">
-                <p style="font-size:0.8rem; margin-bottom:5px;">Selecione as matérias:</p>
+                <p style="font-size:0.8rem; margin-bottom:5px;">Matérias:</p>
                 <div style="display:flex; gap:5px; flex-wrap:wrap;">
                     <button class="subject-chip" onclick="toggleSubject(this, 'mat')">Matemática</button>
                     <button class="subject-chip" onclick="toggleSubject(this, 'red')">Redação</button>
@@ -40,18 +39,21 @@
 
             <div class="slider-container">
                 <div class="slider-label">
-                    <span>Meta de Tempo</span>
+                    <span>Meta Diária</span>
                     <span id="hoursVal" style="color:var(--primary)">2h 00m</span>
                 </div>
                 <input type="range" min="0.5" max="8" step="0.5" value="2" id="hoursInput" oninput="updateHoursLabel(this.value)">
             </div>
 
-            <button class="btn-save" onclick="saveConfig()">Salvar & Gerar</button>
+            <button class="btn-save" onclick="saveConfig()">Salvar Cronograma</button>
         </div>
     </div>
 
     <nav>
-        <div class="logo">✨ Estuda.IA</div>
+        <div class="nav-left">
+            <a href="index.html" class="btn-outline" style="border:none; padding:8px 12px;">⬅ Voltar</a>
+            <div class="logo">✨ Estuda.IA</div>
+        </div>
         <div class="nav-right">
              <div class="study-timer" id="navTimer">00:00</div>
              <button class="btn-outline" onclick="openConfig()">⚙️</button>
@@ -61,7 +63,7 @@
     <div class="container page-cronograma">
         
         <div class="timer-deck">
-            <h3 style="margin-bottom:20px; opacity:0.8">Modo Foco Profundo</h3>
+            <h3 style="margin-bottom:20px; opacity:0.8">Modo Foco</h3>
             
             <div class="timer-ring" id="timerRing">
                 <div class="timer-inner">
@@ -75,22 +77,42 @@
                 <button class="btn-timer btn-play" id="playBtn" onclick="toggleTimer()">▶ INICIAR</button>
             </div>
 
-            <a href="#" onclick="openConfig(); return false;" class="timer-config-link">
-                ⚙️ Ajustar Tempo e Matéria
-            </a>
+            <a href="#" onclick="openConfig(); return false;" class="timer-config-link">⚙️ Ajustar Meta</a>
 
             <div class="sound-bar">
                 <button class="sound-btn" id="btn-rain" onclick="toggleAudio('rain')">🌧 Chuva</button>
-                <button class="sound-btn" id="btn-lofi" onclick="toggleAudio('lofi')">☕ Music</button>
+                <button class="sound-btn" id="btn-lofi" onclick="toggleAudio('lofi')">☕ Lo-Fi</button>
                 <button class="sound-btn" id="btn-white" onclick="toggleAudio('white')">📻 Ruído</button>
             </div>
         </div>
 
         <div>
-            <div style="margin-bottom:20px;">
-                <h2 id="trackTitle">Suas Missões</h2>
-                <p style="color:var(--text-muted)">Complete para ganhar XP e manter a ofensiva.</p>
+            <div class="gamification-bar">
+                <div class="level-info">
+                    <div class="level-badge" id="lvlBadge">1</div>
+                    <div class="xp-container">
+                        <div class="xp-text">
+                            <span>Nível <span id="lvlText">1</span></span>
+                            <span id="xpText">0/1000 XP</span>
+                        </div>
+                        <div class="xp-bg"><div class="xp-fill" id="xpFill"></div></div>
+                    </div>
+                </div>
+                <div class="streak-info">
+                    🔥 <span id="streakVal">0</span> dias seguidos
+                </div>
             </div>
+
+            <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Sua Consistência (Últimos 14 dias)</h4>
+                <div class="heatmap-box" id="heatmapGrid">
+                    </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <h2 id="trackTitle">Missões de Hoje</h2>
+            </div>
+            
             <div id="missionsList">
                 </div>
         </div>
@@ -98,196 +120,205 @@
 
     <script>
         // ===========================================
-        // 1. GESTÃO DE ESTADO (Persistência)
+        // 1. GESTÃO DE ESTADO (Com Histórico e XP)
         // ===========================================
-        
-        // Tenta carregar do LocalStorage, senão usa padrão
-        const savedData = localStorage.getItem('estudaia_v3_state');
+        const savedData = localStorage.getItem('estudaia_v4_state');
         
         let state = savedData ? JSON.parse(savedData) : {
-            firstVisit: true,        // Controla se o modal abre sozinho
-            track: 'med',            // Valor padrão seguro
+            firstVisit: true,
+            track: 'med',
             customSubjects: [],
             goalMinutes: 120,
             elapsedSeconds: 0,
             isRunning: false,
-            completed: []            // IDs das missões completas
+            // Gamificação
+            totalXP: 0,
+            streak: 0,
+            lastLoginDate: null,
+            // Controle Diário
+            lastDateKey: new Date().toLocaleDateString(),
+            completedToday: [], // IDs das missões de hoje
+            history: {} // Formato: { "10/05/2025": 5 (qtd missões), ... }
         };
 
-        // Reset Diário (Se virou o dia, limpa as missões feitas, mas mantém a config)
+        // Verificação de virada de dia
         const todayKey = new Date().toLocaleDateString();
-        if (state.lastDate !== todayKey) {
-            state.completed = []; // Reseta conclusões
-            state.elapsedSeconds = 0; // Reseta timer
-            state.lastDate = todayKey;
-            saveState(); // Salva o reset
+        if (state.lastDateKey !== todayKey) {
+            // Verifica Streak (se logou ontem, mantém. Se não, zera)
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayKey = yesterday.toLocaleDateString();
+
+            if (state.lastLoginDate === yesterdayKey) {
+                // Mantém streak
+            } else if (state.lastLoginDate !== todayKey) {
+                state.streak = 0; // Quebrou a ofensiva (exceto se for o mesmo dia)
+            }
+
+            state.completedToday = [];
+            state.elapsedSeconds = 0;
+            state.lastDateKey = todayKey;
+            saveState();
+        }
+
+        // Atualiza data de login
+        if (state.lastLoginDate !== todayKey) {
+            state.streak++;
+            state.lastLoginDate = todayKey;
+            saveState();
         }
 
         function saveState() {
-            localStorage.setItem('estudaia_v3_state', JSON.stringify(state));
+            localStorage.setItem('estudaia_v4_state', JSON.stringify(state));
+            renderGamification(); // Atualiza visual sempre que salvar
         }
 
         // ===========================================
-        // 2. BANCO DE QUESTÕES
+        // 2. BANCO DE DADOS
         // ===========================================
         const DB = {
-            mat: { t: "Matemática", d: "Lista: Geometria Plana", xp: 150, i: "📐", url: "simulados.html?materia=matematica" },
-            red: { t: "Redação", d: "Escrever: Tema da Semana", xp: 300, i: "📝", url: "redacao.html" },
-            nat: { t: "Natureza", d: "Revisão: Estequiometria", xp: 150, i: "🧪", url: "simulados.html?materia=natureza" },
-            hum: { t: "Humanas", d: "Quiz: Revolução Industrial", xp: 100, i: "🏺", url: "simulados.html?materia=humanas" },
+            mat: { t: "Matemática", d: "Lista: Geometria Espacial", xp: 200, i: "📐", url: "simulados.html?materia=matematica" },
+            red: { t: "Redação", d: "Escrever: Tema 'IA na Educação'", xp: 350, i: "📝", url: "redacao.html" },
+            nat: { t: "Natureza", d: "Revisão: Eletrodinâmica", xp: 200, i: "⚡", url: "simulados.html?materia=natureza" },
+            hum: { t: "Humanas", d: "Resumo: Era Vargas", xp: 150, i: "📜", url: "simulados.html?materia=humanas" },
             
-            // Presets (Trilhas prontas)
             med: ['nat', 'nat', 'red', 'mat'],
             eng: ['mat', 'mat', 'nat', 'red'],
             hum: ['hum', 'hum', 'red', 'mat']
         };
 
         // ===========================================
-        // 3. INICIALIZAÇÃO INTELIGENTE
+        // 3. INICIALIZAÇÃO
         // ===========================================
-        
         window.onload = function() {
-            if (state.firstVisit) {
-                // Se é a 1ª vez, abre o modal
-                openConfig();
-            } else {
-                // Se já configurou, carrega direto
+            if (state.firstVisit) openConfig();
+            else {
                 renderMissions();
-                updateDisplay(); // Restaura o visual do timer
+                updateDisplay();
                 updateHoursLabel(state.goalMinutes / 60);
             }
+            renderGamification();
+            renderHeatmap();
         };
 
         // ===========================================
-        // 4. LÓGICA DO MODAL
+        // 4. LÓGICA DE GAMIFICAÇÃO & UI
         // ===========================================
-        
-        function openConfig() { 
-            document.getElementById('configModal').style.display = 'flex'; 
-            
-            // Restaura visualmente a escolha salva
-            const savedTrack = state.track || 'med';
-            const opts = document.querySelectorAll('.track-option');
-            opts.forEach(el => {
-                if(el.textContent.toLowerCase().includes(savedTrack === 'custom' ? 'personalizado' : savedTrack)) {
-                    // Simples match de texto para UI
-                    selectTrack(el, savedTrack);
-                }
-            });
-            
-            // Restaura o slider
-            document.getElementById('hoursInput').value = state.goalMinutes / 60;
-            updateHoursLabel(state.goalMinutes / 60);
-        }
-        
-        function selectTrack(el, type) {
-            document.querySelectorAll('.track-option').forEach(e => e.classList.remove('selected'));
-            el.classList.add('selected');
-            
-            // Mostra area personalizada se for custom
-            document.getElementById('customArea').style.display = (type === 'custom') ? 'block' : 'none';
-            
-            // Não salvamos no state ainda, só quando clicar em SALVAR
-            el.dataset.tempType = type; 
+        function renderGamification() {
+            // Nível = Cada 1000 XP sobe 1 nível
+            const level = Math.floor(state.totalXP / 1000) + 1;
+            const xpCurrent = state.totalXP % 1000;
+            const xpPercent = (xpCurrent / 1000) * 100;
+
+            document.getElementById('lvlBadge').innerText = level;
+            document.getElementById('lvlText').innerText = level;
+            document.getElementById('xpText').innerText = `${xpCurrent}/1000 XP`;
+            document.getElementById('xpFill').style.width = `${xpPercent}%`;
+            document.getElementById('streakVal').innerText = state.streak;
         }
 
-        function toggleSubject(btn, subj) {
-            btn.classList.toggle('selected');
-            // Lógica visual apenas, salvamos no final
-        }
-
-        function updateHoursLabel(val) {
-            const h = Math.floor(val);
-            const m = (val % 1) * 60;
-            document.getElementById('hoursVal').innerText = `${h}h ${m===0?'00':m}m`;
-        }
-
-        function saveConfig() {
-            // 1. Pega o tipo selecionado
-            const selectedOpt = document.querySelector('.track-option.selected');
-            const type = selectedOpt ? (selectedOpt.dataset.tempType || selectedOpt.getAttribute('onclick').split("'")[1]) : 'med';
+        function renderHeatmap() {
+            const grid = document.getElementById('heatmapGrid');
+            grid.innerHTML = '';
             
-            state.track = type;
-            state.firstVisit = false; // Nunca mais abre sozinho
-            
-            // 2. Se for custom, pega as matérias
-            if (type === 'custom') {
-                const selectedChips = document.querySelectorAll('.subject-chip.selected');
-                state.customSubjects = Array.from(selectedChips).map(c => c.getAttribute('onclick').split("'")[1]);
-                if(state.customSubjects.length === 0) state.customSubjects = ['mat', 'red']; // Fallback
+            // Gera últimos 14 dias
+            for (let i = 13; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const k = d.toLocaleDateString();
+                
+                const count = state.history[k] || 0;
+                let activeClass = '';
+                if (count >= 4) activeClass = 'active-3';
+                else if (count >= 2) activeClass = 'active-2';
+                else if (count >= 1) activeClass = 'active-1';
+
+                const div = document.createElement('div');
+                div.className = `heatmap-day ${activeClass}`;
+                div.title = `${k}: ${count} missões`;
+                grid.appendChild(div);
             }
+        }
 
-            // 3. Pega o tempo
-            const val = document.getElementById('hoursInput').value;
-            state.goalMinutes = val * 60;
-
-            saveState(); // Persiste
-            
-            document.getElementById('configModal').style.display = 'none';
-            renderMissions();
-            resetTimer(); 
+        function spawnFloatingXP(amount, x, y) {
+            const el = document.createElement('div');
+            el.className = 'floating-xp';
+            el.innerText = `+${amount} XP`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
         }
 
         // ===========================================
-        // 5. RENDERIZAÇÃO
+        // 5. MISSÕES & RENDERIZAÇÃO
         // ===========================================
-        
         function renderMissions() {
             const list = document.getElementById('missionsList');
             list.innerHTML = '';
             
-            let subjectsToLoad = [];
-            
-            if (state.track === 'custom') {
-                subjectsToLoad = state.customSubjects.length > 0 ? state.customSubjects : ['red', 'mat'];
-            } else {
-                subjectsToLoad = DB[state.track] || DB['med'];
-            }
+            let load = (state.track === 'custom') ? 
+                (state.customSubjects.length ? state.customSubjects : ['red']) : 
+                (DB[state.track] || DB['med']);
 
-            subjectsToLoad.forEach((key, idx) => {
-                const missionData = DB[key] || DB['mat'];
-                const isDone = state.completed.includes(idx);
+            load.forEach((key, idx) => {
+                const data = DB[key] || DB['mat'];
+                const isDone = state.completedToday.includes(idx);
                 
                 const div = document.createElement('div');
                 div.className = `mission-card ${isDone ? 'mission-done' : ''}`;
                 
+                // Note o "event" passado no onclick para pegar a posição do mouse
                 div.innerHTML = `
                     <div class="mission-left">
-                        <div class="mission-icon">${missionData.i}</div>
+                        <div class="mission-icon">${data.i}</div>
                         <div class="mission-info">
-                            <h3>${missionData.t}</h3>
-                            <p>${missionData.d}</p>
-                            <span class="xp-badge">+${missionData.xp} XP</span>
+                            <h3>${data.t}</h3>
+                            <p>${data.d}</p>
+                            <span class="xp-badge">+${data.xp} XP</span>
                         </div>
                     </div>
-                    <a href="${missionData.url}" class="btn-start" onclick="markAsDone(${idx})">
-                        ${isDone ? 'Concluído ✅' : 'Ir Agora ➔'}
+                    <a href="${data.url}" class="btn-start" onclick="completeMission(event, ${idx}, ${data.xp})">
+                        ${isDone ? 'Feito ✅' : 'Iniciar ➔'}
                     </a>
                 `;
                 list.appendChild(div);
             });
-
+            
             const titles = { med: 'Foco Saúde', eng: 'Foco Exatas', hum: 'Foco Humanas', custom: 'Personalizado' };
             document.getElementById('trackTitle').innerText = titles[state.track] || 'Cronograma';
         }
 
-        function markAsDone(idx) {
-            if(!state.completed.includes(idx)) {
-                state.completed.push(idx);
+        function completeMission(e, idx, xp) {
+            if (!state.completedToday.includes(idx)) {
+                // Lógica XP
+                state.completedToday.push(idx);
+                state.totalXP += xp;
+                
+                // Lógica Histórico
+                const k = state.lastDateKey;
+                state.history[k] = (state.history[k] || 0) + 1;
+                
                 saveState();
                 
-                // Efeito Confete
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                // Efeitos Visuais
+                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+                spawnFloatingXP(xp, e.clientX, e.clientY);
                 
-                // Pequeno delay para recarregar visual (opcional)
-                setTimeout(() => renderMissions(), 500);
+                // Delay para navegar, para dar tempo de ver a animação
+                e.preventDefault(); // Impede navegação imediata
+                const url = e.currentTarget.getAttribute('href');
+                
+                setTimeout(() => {
+                    renderMissions(); // Atualiza UI
+                    window.location.href = url; // Navega
+                }, 800);
             }
         }
 
         // ===========================================
         // 6. TIMER & AUDIO
         // ===========================================
-        
         let timerInterval = null;
         let currentAudio = null;
 
@@ -309,11 +340,10 @@
                 
                 timerInterval = setInterval(() => {
                     state.elapsedSeconds++;
-                    if(state.elapsedSeconds % 5 === 0) saveState(); // Salva a cada 5s
+                    if(state.elapsedSeconds % 10 === 0) saveState();
                     updateDisplay();
                 }, 1000);
             }
-            saveState();
         }
 
         function resetTimer() {
@@ -321,7 +351,6 @@
             state.isRunning = false;
             state.elapsedSeconds = 0;
             saveState();
-            
             document.getElementById('playBtn').innerText = "▶ INICIAR";
             document.getElementById('playBtn').style.background = "#10B981";
             document.getElementById('timerStatus').innerText = "Pronto?";
@@ -329,62 +358,89 @@
         }
 
         function updateDisplay() {
-            const hours = Math.floor(state.elapsedSeconds / 3600);
-            const minutes = Math.floor((state.elapsedSeconds % 3600) / 60);
-            const seconds = state.elapsedSeconds % 60;
-
-            const fmt = (n) => n.toString().padStart(2, '0');
-            const timeString = hours > 0 
-                ? `${fmt(hours)}:${fmt(minutes)}:${fmt(seconds)}` 
-                : `${fmt(minutes)}:${fmt(seconds)}`;
-
-            document.getElementById('displayTimer').innerText = timeString;
-            document.getElementById('navTimer').innerText = timeString;
-
-            const totalGoalSeconds = state.goalMinutes * 60;
-            let percent = (state.elapsedSeconds / totalGoalSeconds) * 100;
-            if (percent > 100) percent = 100;
+            const h = Math.floor(state.elapsedSeconds / 3600);
+            const m = Math.floor((state.elapsedSeconds % 3600) / 60);
+            const s = state.elapsedSeconds % 60;
+            const fmt = n => n.toString().padStart(2, '0');
+            const str = h > 0 ? `${fmt(h)}:${fmt(m)}:${fmt(s)}` : `${fmt(m)}:${fmt(s)}`;
             
-            document.getElementById('timerRing').style.background = 
-                `conic-gradient(#10B981 ${percent}%, rgba(255,255,255,0.1) 0%)`;
+            document.getElementById('displayTimer').innerText = str;
+            document.getElementById('navTimer').innerText = str;
+
+            const total = state.goalMinutes * 60;
+            let pct = (state.elapsedSeconds / total) * 100;
+            if(pct > 100) pct = 100;
+            document.getElementById('timerRing').style.background = `conic-gradient(#10B981 ${pct}%, rgba(255,255,255,0.1) 0%)`;
         }
 
         function toggleAudio(type) {
-            const audioEl = document.getElementById(`audio-${type}`);
+            const el = document.getElementById(`audio-${type}`);
             const btn = document.getElementById(`btn-${type}`);
 
-            // Pausa o atual se clicar no mesmo
+            // Se for o mesmo, pausa
             if (currentAudio === type) {
-                audioEl.pause();
+                el.pause();
                 currentAudio = null;
                 btn.classList.remove('playing');
                 return;
             }
 
-            // Reseta todos os outros
+            // Para os outros
             ['rain', 'lofi', 'white'].forEach(t => {
-                const el = document.getElementById(`audio-${t}`);
+                const other = document.getElementById(`audio-${t}`);
                 const b = document.getElementById(`btn-${t}`);
-                el.pause();
-                el.currentTime = 0; // Volta para o começo
+                other.pause();
+                other.currentTime = 0;
                 b.classList.remove('playing');
             });
 
-            // Toca o novo
-            audioEl.volume = 0.6;
-            const playPromise = audioEl.play();
-
-            if (playPromise !== undefined) {
-                playPromise.then(_ => {
-                    // Play funcionou
+            // Toca o novo (Tratamento de Erro do Chrome)
+            el.volume = 0.5;
+            const promise = el.play();
+            if (promise !== undefined) {
+                promise.then(() => {
                     currentAudio = type;
                     btn.classList.add('playing');
-                })
-                .catch(error => {
-                    console.log("Erro de Autoplay (Interaja com a página primeiro):", error);
-                    alert("Clique na página antes de dar play no som!");
+                }).catch(err => {
+                    console.warn("Autoplay bloqueado. O usuário precisa interagir primeiro.");
                 });
             }
+        }
+
+        // ===========================================
+        // 7. MODAL LOGIC (IGUAL ANTES)
+        // ===========================================
+        function openConfig() { 
+            document.getElementById('configModal').style.display = 'flex'; 
+            updateHoursLabel(state.goalMinutes / 60);
+            document.getElementById('hoursInput').value = state.goalMinutes / 60;
+        }
+        function selectTrack(el, type) {
+            document.querySelectorAll('.track-option').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('customArea').style.display = (type === 'custom') ? 'block' : 'none';
+            el.dataset.tempType = type;
+        }
+        function toggleSubject(btn, subj) { btn.classList.toggle('selected'); }
+        function updateHoursLabel(val) {
+            const h = Math.floor(val); const m = (val % 1) * 60;
+            document.getElementById('hoursVal').innerText = `${h}h ${m===0?'00':m}m`;
+        }
+        function saveConfig() {
+            const sel = document.querySelector('.track-option.selected');
+            const type = sel ? (sel.dataset.tempType || 'med') : 'med';
+            state.track = type;
+            state.firstVisit = false;
+            
+            if (type === 'custom') {
+                const chips = document.querySelectorAll('.subject-chip.selected');
+                state.customSubjects = Array.from(chips).map(c => c.getAttribute('onclick').split("'")[1]);
+            }
+            state.goalMinutes = document.getElementById('hoursInput').value * 60;
+            saveState();
+            document.getElementById('configModal').style.display = 'none';
+            renderMissions();
+            resetTimer();
         }
     </script>
 </body>
