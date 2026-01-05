@@ -70,21 +70,17 @@
         
         <div class="timer-deck">
             <h3 style="margin-bottom:20px; opacity:0.8">Modo Foco</h3>
-            
             <div class="timer-ring" id="timerRing">
                 <div class="timer-inner">
                     <div class="timer-display" id="displayTimer">00:00</div>
                     <div class="timer-label" id="timerStatus">Pronto?</div>
                 </div>
             </div>
-            
             <div class="timer-controls">
                 <button class="btn-timer btn-stop" onclick="resetTimer()">⏹ Reset</button>
                 <button class="btn-timer btn-play" id="playBtn" onclick="toggleTimer()">▶ INICIAR</button>
             </div>
-
             <a onclick="openConfig()" class="timer-config-link">⚙️ Ajustar Meta</a>
-
             <div class="sound-bar">
                 <button class="sound-btn" id="btn-rain" onclick="toggleAudio('rain')">🌧 Chuva</button>
                 <button class="sound-btn" id="btn-lofi" onclick="toggleAudio('lofi')">☕ Lo-Fi</button>
@@ -118,92 +114,169 @@
                 <h2 id="trackTitle">Missões de Hoje</h2>
             </div>
             
-            <div id="missionsList"></div>
+            <div id="missionsList">
+                <div style="text-align:center; padding:20px; color:#6B7280;">
+                    Carregando seu progresso...
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         // ===========================================
-        // 1. GESTÃO DE ESTADO (LOCALSTORAGE)
+        // 1. CONFIGURAÇÃO DE REDE E USUÁRIO
         // ===========================================
-        const savedData = localStorage.getItem('estudaia_v4_state');
-        
-        let state = savedData ? JSON.parse(savedData) : {
-            firstVisit: true,
+        // IMPORTANTE: Mude para a URL do seu servidor em produção (Render)
+        const API_BASE = 'http://localhost:3000/api/cronograma'; 
+
+        // Gera um ID para o dispositivo para identificar no BD (simula login)
+        function getUserId() {
+            let id = localStorage.getItem('estuda_ia_userid');
+            if (!id) {
+                id = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('estuda_ia_userid', id);
+            }
+            return id;
+        }
+        const USER_ID = getUserId();
+
+        let state = {
             track: 'med',
             customSubjects: [],
             goalMinutes: 120,
             elapsedSeconds: 0,
             isRunning: false,
-            // Gamificação
             totalXP: 0,
             streak: 0,
-            lastLoginDate: null,
-            // Controle Diário
-            lastDateKey: new Date().toLocaleDateString(),
-            completedToday: [], 
-            history: {} 
+            completedToday: [],
+            heatmapData: [] // Histórico vindo do BD
         };
 
-        const todayKey = new Date().toLocaleDateString();
-        
-        // Reset diário
-        if (state.lastDateKey !== todayKey) {
-            // Lógica simples de streak
-            const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayKey = yesterday.toLocaleDateString();
-            
-            if (state.lastLoginDate !== yesterdayKey && state.lastLoginDate !== todayKey) {
-                state.streak = 0; 
-            }
-            state.completedToday = [];
-            state.elapsedSeconds = 0;
-            state.lastDateKey = todayKey;
-            saveState();
-        }
-
-        // Atualiza Login
-        if (state.lastLoginDate !== todayKey) {
-            state.streak++;
-            state.lastLoginDate = todayKey;
-            saveState();
-        }
-
-        function saveState() {
-            localStorage.setItem('estudaia_v4_state', JSON.stringify(state));
-            renderGamification();
-        }
-
         // ===========================================
-        // 2. BANCO DE DADOS (SIMULADO NO FRONTEND)
+        // 2. BANCO DE QUESTÕES (Estático no Frontend)
         // ===========================================
         const DB = {
             mat: { t: "Matemática", d: "Lista: Geometria Espacial", xp: 200, i: "📐", url: "simulados.html?materia=matematica" },
             red: { t: "Redação", d: "Escrever: Tema 'IA na Educação'", xp: 350, i: "📝", url: "redacao.html" },
             nat: { t: "Natureza", d: "Revisão: Eletrodinâmica", xp: 200, i: "⚡", url: "simulados.html?materia=natureza" },
             hum: { t: "Humanas", d: "Resumo: Era Vargas", xp: 150, i: "📜", url: "simulados.html?materia=humanas" },
-            
             med: ['nat', 'nat', 'red', 'mat'],
             eng: ['mat', 'mat', 'nat', 'red'],
             hum: ['hum', 'hum', 'red', 'mat']
         };
 
         // ===========================================
-        // 3. INICIALIZAÇÃO
+        // 3. INICIALIZAÇÃO (FETCH DO BACKEND)
         // ===========================================
-        window.onload = function() {
-            if (state.firstVisit) openConfig();
-            else {
+        window.onload = async function() {
+            try {
+                // Chama a API que criamos no server
+                const res = await fetch(`${API_BASE}/dados`, {
+                    headers: { 'x-user-id': USER_ID }
+                });
+                
+                if (!res.ok) throw new Error('Erro na API');
+                const data = await res.json();
+
+                // Atualiza o estado com o que veio do Banco de Dados
+                state.track = data.config.track;
+                state.goalMinutes = data.config.goal_minutes;
+                state.customSubjects = data.config.custom_subjects;
+                
+                state.totalXP = data.stats.total_xp;
+                state.streak = data.stats.streak;
+                
+                state.completedToday = data.completedToday; // IDs já feitos hoje
+                state.heatmapData = data.history;
+
+                // Renderiza
                 renderMissions();
+                renderGamification();
+                renderHeatmap();
                 updateDisplay();
                 updateHoursLabel(state.goalMinutes / 60);
+
+                // Se for a primeira vez (XP zerado e sem config definida), abre modal
+                if (data.stats.total_xp === 0 && !data.config.track) {
+                    openConfig();
+                }
+
+            } catch (err) {
+                console.error("Falha ao carregar dados:", err);
+                document.getElementById('missionsList').innerHTML = `<p style="color:red; text-align:center">Erro ao conectar com o servidor.<br>Verifique se o backend está rodando.</p>`;
             }
-            renderGamification();
-            renderHeatmap();
         };
 
         // ===========================================
-        // 4. UI & GAMIFICAÇÃO
+        // 4. AÇÕES COM O BACKEND
+        // ===========================================
+        
+        async function saveConfig() {
+            // Pega dados da UI
+            const sel = document.querySelector('.track-option.selected');
+            const type = sel ? (sel.dataset.tempType || 'med') : 'med';
+            const val = document.getElementById('hoursInput').value;
+            let customSubs = [];
+
+            if (type === 'custom') {
+                const chips = document.querySelectorAll('.subject-chip.selected');
+                customSubs = Array.from(chips).map(c => c.getAttribute('onclick').split("'")[1]);
+            }
+
+            // Atualiza UI localmente (Feedback imediato)
+            state.track = type;
+            state.goalMinutes = val * 60;
+            state.customSubjects = customSubs;
+
+            closeConfig();
+            renderMissions();
+            resetTimer();
+
+            // Salva no Banco de Dados
+            try {
+                await fetch(`${API_BASE}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+                    body: JSON.stringify({
+                        track: type,
+                        goalMinutes: state.goalMinutes,
+                        customSubjects: customSubs
+                    })
+                });
+            } catch (e) { console.error("Erro ao salvar config", e); }
+        }
+
+        async function completeMission(e, idx, xp) {
+            if (!state.completedToday.includes(idx)) {
+                // UI Otimista
+                state.completedToday.push(idx);
+                state.totalXP += xp;
+                
+                // Animações
+                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+                spawnFloatingXP(xp, e.clientX, e.clientY);
+                renderGamification(); 
+
+                // Envia para o Banco
+                const today = new Date().toISOString().split('T')[0];
+                fetch(`${API_BASE}/concluir`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+                    body: JSON.stringify({ missionId: idx, xpEarned: xp, date: today })
+                }).catch(e => console.error("Erro ao salvar missão", e));
+
+                // Navegação com delay
+                e.preventDefault();
+                const url = e.currentTarget.getAttribute('href');
+                setTimeout(() => {
+                    renderMissions(); 
+                    window.location.href = url;
+                }, 800);
+            }
+        }
+
+        // ===========================================
+        // 5. RENDERIZAÇÃO E UI
         // ===========================================
         function renderGamification() {
             const level = Math.floor(state.totalXP / 1000) + 1;
@@ -220,12 +293,33 @@
         function renderHeatmap() {
             const grid = document.getElementById('heatmapGrid');
             grid.innerHTML = '';
+            
+            // Transforma array do DB em mapa de datas
+            const map = {};
+            if(state.heatmapData) {
+                state.heatmapData.forEach(item => {
+                    // O backend pode retornar data completa, pegamos só a string YYYY-MM-DD
+                    const dateKey = new Date(item.created_at || item.date).toISOString().split('T')[0]; 
+                    // No controller simplificado que mandamos, ele pode mandar já agrupado ou raw
+                    // Vamos assumir raw history e contar aqui, ou usar count se vier
+                    if(item.count) {
+                        map[dateKey] = item.count;
+                    } else {
+                        if(!map[dateKey]) map[dateKey] = 0;
+                        map[dateKey]++;
+                    }
+                });
+            }
+
             for (let i = 13; i >= 0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
-                const k = d.toLocaleDateString();
-                const count = state.history[k] || 0;
+                const k = d.toISOString().split('T')[0];
+                const count = map[k] || 0;
                 let cls = '';
-                if (count >= 4) cls = 'active-3'; else if (count >= 2) cls = 'active-2'; else if (count >= 1) cls = 'active-1';
+                if (count >= 4) cls = 'active-3'; 
+                else if (count >= 2) cls = 'active-2'; 
+                else if (count >= 1) cls = 'active-1';
+                
                 const div = document.createElement('div');
                 div.className = `heatmap-day ${cls}`;
                 div.title = `${k}: ${count} missões`;
@@ -233,21 +327,12 @@
             }
         }
 
-        function spawnFloatingXP(amount, x, y) {
-            const el = document.createElement('div');
-            el.className = 'floating-xp';
-            el.innerText = `+${amount} XP`;
-            el.style.left = `${x}px`; el.style.top = `${y}px`;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
-        }
-
         function renderMissions() {
             const list = document.getElementById('missionsList');
             list.innerHTML = '';
             
             let load = (state.track === 'custom') ? 
-                (state.customSubjects.length ? state.customSubjects : ['red']) : 
+                (state.customSubjects && state.customSubjects.length ? state.customSubjects : ['red']) : 
                 (DB[state.track] || DB['med']);
 
             load.forEach((key, idx) => {
@@ -271,34 +356,21 @@
                 `;
                 list.appendChild(div);
             });
-            
             const titles = { med: 'Foco Saúde', eng: 'Foco Exatas', hum: 'Foco Humanas', custom: 'Personalizado' };
             document.getElementById('trackTitle').innerText = titles[state.track] || 'Cronograma';
         }
 
-        function completeMission(e, idx, xp) {
-            if (!state.completedToday.includes(idx)) {
-                state.completedToday.push(idx);
-                state.totalXP += xp;
-                
-                const k = state.lastDateKey;
-                state.history[k] = (state.history[k] || 0) + 1;
-                saveState();
-                
-                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-                spawnFloatingXP(xp, e.clientX, e.clientY);
-                
-                e.preventDefault();
-                const url = e.currentTarget.getAttribute('href');
-                setTimeout(() => {
-                    renderMissions();
-                    window.location.href = url;
-                }, 800);
-            }
+        function spawnFloatingXP(amount, x, y) {
+            const el = document.createElement('div');
+            el.className = 'floating-xp';
+            el.innerText = `+${amount} XP`;
+            el.style.left = `${x}px`; el.style.top = `${y}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
         }
 
         // ===========================================
-        // 5. TIMER & AUDIO
+        // 6. TIMER & AUDIO
         // ===========================================
         let timerInterval = null;
         let currentAudio = null;
@@ -306,7 +378,6 @@
         function toggleTimer() {
             const btn = document.getElementById('playBtn');
             const status = document.getElementById('timerStatus');
-
             if (state.isRunning) {
                 clearInterval(timerInterval);
                 state.isRunning = false;
@@ -316,7 +387,6 @@
                 btn.innerText = "⏸ PAUSAR"; btn.style.background = "#F59E0B"; status.innerText = "Focando...";
                 timerInterval = setInterval(() => {
                     state.elapsedSeconds++;
-                    if(state.elapsedSeconds % 10 === 0) saveState();
                     updateDisplay();
                 }, 1000);
             }
@@ -324,7 +394,7 @@
 
         function resetTimer() {
             clearInterval(timerInterval);
-            state.isRunning = false; state.elapsedSeconds = 0; saveState();
+            state.isRunning = false; state.elapsedSeconds = 0;
             document.getElementById('playBtn').innerText = "▶ INICIAR"; document.getElementById('playBtn').style.background = "#10B981";
             document.getElementById('timerStatus').innerText = "Pronto?";
             updateDisplay();
@@ -349,7 +419,6 @@
         function toggleAudio(type) {
             const el = document.getElementById(`audio-${type}`);
             const btn = document.getElementById(`btn-${type}`);
-
             if (currentAudio === type) {
                 el.pause(); currentAudio = null; btn.classList.remove('playing');
                 return;
@@ -359,22 +428,28 @@
                 const b = document.getElementById(`btn-${t}`);
                 other.pause(); other.currentTime = 0; b.classList.remove('playing');
             });
-            
             el.volume = 0.5;
             const promise = el.play();
             if (promise !== undefined) {
-                promise.then(() => {
-                    currentAudio = type; btn.classList.add('playing');
-                }).catch(err => {
-                    console.warn("Autoplay bloqueado. Clique na página primeiro.");
-                });
+                promise.then(() => { currentAudio = type; btn.classList.add('playing'); })
+                .catch(err => console.warn("Autoplay bloqueado. Interaja com a página primeiro."));
             }
         }
 
         // ===========================================
-        // 6. MODAL
+        // 7. MODAL UI
         // ===========================================
-        function openConfig() { document.getElementById('configModal').style.display = 'flex'; updateHoursLabel(state.goalMinutes / 60); document.getElementById('hoursInput').value = state.goalMinutes / 60; }
+        function openConfig() { 
+            document.getElementById('configModal').style.display = 'flex'; 
+            updateHoursLabel(state.goalMinutes / 60); 
+            document.getElementById('hoursInput').value = state.goalMinutes / 60;
+            
+            const opts = document.querySelectorAll('.track-option');
+            opts.forEach(el => {
+                el.classList.remove('selected');
+                if (el.getAttribute('onclick').includes(state.track)) el.classList.add('selected');
+            });
+        }
         function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
         
         function selectTrack(el, type) {
@@ -387,17 +462,6 @@
         function updateHoursLabel(val) {
             const h = Math.floor(val); const m = (val % 1) * 60;
             document.getElementById('hoursVal').innerText = `${h}h ${m===0?'00':m}m`;
-        }
-        function saveConfig() {
-            const sel = document.querySelector('.track-option.selected');
-            const type = sel ? (sel.dataset.tempType || 'med') : 'med';
-            state.track = type; state.firstVisit = false;
-            if (type === 'custom') {
-                const chips = document.querySelectorAll('.subject-chip.selected');
-                state.customSubjects = Array.from(chips).map(c => c.getAttribute('onclick').split("'")[1]);
-            }
-            state.goalMinutes = document.getElementById('hoursInput').value * 60;
-            saveState(); closeConfig(); renderMissions(); resetTimer();
         }
     </script>
 </body>
