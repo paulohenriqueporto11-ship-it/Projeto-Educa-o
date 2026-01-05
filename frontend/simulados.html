@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulados Personalizados - Estuda.IA</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4F46E5">
+    <title>Simulados Pro - Estuda.IA</title>
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    </head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .topics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; text-align: left; }
+        .topic-checkbox { display: none; }
+        .topic-label { background: white; border: 2px solid var(--border); padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;}
+        .topic-checkbox:checked + .topic-label { border-color: var(--primary); background: #EEF2FF; color: var(--primary); }
+        .topic-checkbox:checked + .topic-label::after { content: '✅'; }
+        .loading-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:999; display:flex; justify-content:center; align-items:center; flex-direction:column;}
+    </style>
+</head>
 <body>
+
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader"></div>
+        <p style="margin-top:15px; color:var(--text-muted)">Sincronizando seu progresso...</p>
+    </div>
 
     <nav>
         <div class="logo">✨ Estuda.IA</div>
@@ -18,29 +30,18 @@
 
     <div class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
         
-        <div id="menuScreen" style="width: 100%;">
+        <div id="menuScreen" style="width: 100%; display:none;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="margin-bottom: 10px;">Simulados</h1>
-                <p style="color:var(--text-muted);">Selecione a grande área para começar.</p>
+                <p style="color:var(--text-muted);">Questões inteligentes que não se repetem.</p>
+                <small id="progressoTotal" style="color:var(--primary); font-weight:bold;">Carregando stats...</small>
             </div>
 
             <div class="subjects-grid">
-                <div class="subject-card" onclick="openSubMenu('Humanas')">
-                    <span class="subject-icon">🏛️</span>
-                    <span class="subject-title">Humanas</span>
-                </div>
-                <div class="subject-card" onclick="openSubMenu('Natureza')">
-                    <span class="subject-icon">🧬</span>
-                    <span class="subject-title">Natureza</span>
-                </div>
-                <div class="subject-card" onclick="openSubMenu('Linguagens')">
-                    <span class="subject-icon">📚</span>
-                    <span class="subject-title">Linguagens</span>
-                </div>
-                <div class="subject-card" onclick="openSubMenu('Matemática')">
-                    <span class="subject-icon">📐</span>
-                    <span class="subject-title">Matemática</span>
-                </div>
+                <div class="subject-card" onclick="openSubMenu('Humanas')"><span class="subject-icon">🏛️</span><span class="subject-title">Humanas</span></div>
+                <div class="subject-card" onclick="openSubMenu('Natureza')"><span class="subject-icon">🧬</span><span class="subject-title">Natureza</span></div>
+                <div class="subject-card" onclick="openSubMenu('Linguagens')"><span class="subject-icon">📚</span><span class="subject-title">Linguagens</span></div>
+                <div class="subject-card" onclick="openSubMenu('Matemática')"><span class="subject-icon">📐</span><span class="subject-title">Matemática</span></div>
             </div>
             
             <div style="margin-top:20px; text-align:center;">
@@ -51,15 +52,12 @@
         <div id="selectionScreen" style="display: none; width: 100%; max-width: 500px;">
             <div style="text-align:center;">
                 <h2 id="selectionTitle" style="margin-bottom:5px;">Matemática</h2>
-                <p style="color:var(--text-muted); font-size:0.9rem;">O que você quer treinar hoje?</p>
+                <p style="color:var(--text-muted); font-size:0.9rem;">Selecione os tópicos:</p>
             </div>
-
-            <div class="topics-grid" id="topicsContainer">
-                </div>
-
+            <div class="topics-grid" id="topicsContainer"></div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-outline" onclick="backToMenu()" style="flex:1;">Voltar</button>
-                <button class="btn" onclick="confirmStart()" style="flex:1;">Iniciar Prova</button>
+                <button class="btn" onclick="confirmStart()" style="flex:1;">Iniciar</button>
             </div>
         </div>
 
@@ -76,106 +74,170 @@
             <div style="font-size: 4rem;">🏆</div>
             <h2 style="margin-bottom: 10px;">Resultado</h2>
             <div class="quiz-score" id="finalScore">0/5</div>
-            <p id="feedbackText" style="margin-bottom: 30px; color:var(--text-muted);">...</p>
+            <p id="feedbackText" style="margin-bottom: 20px; color:var(--text-muted);">Salvando seu progresso...</p>
             <button class="btn" onclick="location.reload()">Novo Simulado</button>
         </div>
 
     </div>
 
     <script>
-        // --- BANCO DE DADOS EXPANDIDO (COM SUBCATEGORIAS) ---
-        // 'cat' = Área Grande | 'sub' = Tópico Específico
+        // --- 1. CONFIGURAÇÃO SUPABASE ---
+        // (Substitua pelas suas chaves do Render/Supabase se não pegar do server, 
+        // mas aqui vamos usar hardcoded ou variáveis se vc tiver um arquivo config)
+        
+        // 🚨 IMPORTANTE: Coloque suas chaves reais aqui para o teste!
+        const SUPABASE_URL = 'SUA_URL_SUPABASE_AQUI'; 
+        const SUPABASE_KEY = 'SUA_KEY_ANON_AQUI';
+        
+        // Se já tiver client global, usa ele, senão cria um novo
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+        // Recupera ID do usuário
+        let userId = localStorage.getItem('estuda_ia_userid');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('estuda_ia_userid', userId);
+        }
+
+        // --- 2. BANCO DE QUESTÕES COM IDs (SISTEMA DE CÓDIGOS) ---
+        // IDs: [CAT]-[SUB]-[NUMERO]
         const database = [
-            // MATEMÁTICA
-            { cat: "Matemática", sub: "Geometria", txt: "A soma dos ângulos internos de um triângulo é:", opt: ["180°", "360°", "90°", "270°"], cor: 0 },
-            { cat: "Matemática", sub: "Geometria", txt: "Qual o volume de um cubo de aresta 2cm?", opt: ["4cm³", "6cm³", "8cm³", "16cm³"], cor: 2 },
-            { cat: "Matemática", sub: "Álgebra", txt: "Quanto é 20% de 500?", opt: ["50", "100", "150", "200"], cor: 1 },
-            { cat: "Matemática", sub: "Álgebra", txt: "Resolva: 2x + 10 = 20", opt: ["x = 10", "x = 5", "x = 2", "x = 0"], cor: 1 },
-            { cat: "Matemática", sub: "Estatística", txt: "A média aritmética de 5, 10 e 15 é:", opt: ["5", "10", "15", "20"], cor: 1 },
-
-            // NATUREZA
-            { cat: "Natureza", sub: "Biologia", txt: "Organela da respiração celular:", opt: ["Ribossomo", "Mitocôndria", "Lisossomo", "Golgi"], cor: 1 },
-            { cat: "Natureza", sub: "Química", txt: "Símbolo do Sódio na tabela:", opt: ["So", "Ni", "Na", "No"], cor: 2 },
-            { cat: "Natureza", sub: "Física", txt: "A 1ª Lei de Newton é a lei da:", opt: ["Inércia", "Ação e Reação", "Gravidade", "Força"], cor: 0 },
-            { cat: "Natureza", sub: "Física", txt: "V = ΔS / Δt calcula:", opt: ["Aceleração", "Velocidade Média", "Força", "Trabalho"], cor: 1 },
-
-            // HUMANAS
-            { cat: "Humanas", sub: "História", txt: "A Guerra Fria foi entre:", opt: ["EUA e China", "EUA e URSS", "Alemanha e França", "Inglaterra e Japão"], cor: 1 },
-            { cat: "Humanas", sub: "História", txt: "Presidente que construiu Brasília:", opt: ["Vargas", "Kubitschek", "Jânio", "Collor"], cor: 1 },
-            { cat: "Humanas", sub: "Geografia", txt: "Bioma predominante no Centro-Oeste:", opt: ["Amazônia", "Caatinga", "Cerrado", "Pampa"], cor: 2 },
-            { cat: "Humanas", sub: "Filosofia", txt: "Autor do mito da caverna:", opt: ["Sócrates", "Platão", "Aristóteles", "Descartes"], cor: 1 },
-
-            // LINGUAGENS
-            { cat: "Linguagens", sub: "Gramática", txt: "Qual palavra é oxítona?", opt: ["Mesa", "Lápis", "Café", "Árvore"], cor: 2 },
-            { cat: "Linguagens", sub: "Literatura", txt: "Autor de Dom Casmurro:", opt: ["Jorge Amado", "Machado de Assis", "Alencar", "Clarice"], cor: 1 },
-            { cat: "Linguagens", sub: "Artes", txt: "Movimento da Semana de 22:", opt: ["Modernismo", "Barroco", "Romantismo", "Realismo"], cor: 0 }
+            // MATEMÁTICA - GEOMETRIA
+            { id: "MAT-GEO-001", cat: "Matemática", sub: "Geometria", txt: "A soma dos ângulos internos de um triângulo é:", opt: ["180°", "360°", "90°", "270°"], cor: 0 },
+            { id: "MAT-GEO-002", cat: "Matemática", sub: "Geometria", txt: "Volume do cubo de aresta 2cm:", opt: ["4cm³", "8cm³", "6cm³", "12cm³"], cor: 1 },
+            { id: "MAT-GEO-003", cat: "Matemática", sub: "Geometria", txt: "Área do círculo de raio 3cm (use π=3):", opt: ["18cm²", "27cm²", "9cm²", "30cm²"], cor: 1 },
+            
+            // MATEMÁTICA - ÁLGEBRA
+            { id: "MAT-ALG-001", cat: "Matemática", sub: "Álgebra", txt: "Raiz de 2x - 4 = 0:", opt: ["1", "2", "4", "-2"], cor: 1 },
+            { id: "MAT-ALG-002", cat: "Matemática", sub: "Álgebra", txt: "Bhaskara resolve equações de:", opt: ["1º Grau", "2º Grau", "3º Grau", "Exponencial"], cor: 1 },
+            
+            // NATUREZA - BIOLOGIA
+            { id: "NAT-BIO-001", cat: "Natureza", sub: "Biologia", txt: "Usina de energia da célula:", opt: ["Mitocôndria", "Núcleo", "Ribossomo", "Vacúolo"], cor: 0 },
+            { id: "NAT-BIO-002", cat: "Natureza", sub: "Biologia", txt: "Vírus são seres:", opt: ["Eucariontes", "Procariontes", "Acelulares", "Vegetais"], cor: 2 },
+            
+            // HUMANAS - HISTÓRIA
+            { id: "HUM-HIS-001", cat: "Humanas", sub: "História", txt: "Quem descobriu o Brasil?", opt: ["Cabral", "Colombo", "Vasco da Gama", "Pero Vaz"], cor: 0 },
+            { id: "HUM-HIS-002", cat: "Humanas", sub: "História", txt: "Era Vargas durou de:", opt: ["1930-1945", "1964-1985", "1889-1930", "1500-1822"], cor: 0 },
+            
+            // LINGUAGENS - GRAMÁTICA
+            { id: "LIN-GRA-001", cat: "Linguagens", sub: "Gramática", txt: "Antônimo de 'efêmero':", opt: ["Rápido", "Passageiro", "Duradouro", "Breve"], cor: 2 },
+            
+            // ... ADICIONE MAIS 390 QUESTÕES AQUI SEGUINDO O PADRÃO DE ID ...
         ];
 
-        // --- ESTADO ---
+        // --- 3. ESTADO DO APLICATIVO ---
+        let doneQuestions = new Set(); // Conjunto de IDs já feitos
         let quizPool = [];
         let currentIndex = 0;
         let score = 0;
         let currentCategory = "";
+        let sessionAnsweredIDs = []; // IDs respondidos NESTA sessão para salvar depois
 
-        // --- PASSO 1: ABRIR MENU DE SELEÇÃO ---
+        // --- 4. INICIALIZAÇÃO E SINCRONIA ---
+        window.onload = async function() {
+            if(!supabase) {
+                alert("Configure as chaves do Supabase no código!");
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('menuScreen').style.display = 'block';
+                return;
+            }
+
+            try {
+                // Busca no BD quais questões esse usuário já fez
+                const { data, error } = await supabase
+                    .from('questoes_feitas')
+                    .select('question_id')
+                    .eq('user_id', userId);
+                
+                if (error) throw error;
+
+                // Armazena no Set para consulta rápida
+                data.forEach(item => doneQuestions.add(item.question_id));
+                
+                // Calcula estatísticas
+                const totalFeitas = doneQuestions.size;
+                const totalDisponivel = database.length;
+                document.getElementById('progressoTotal').innerText = `Você já dominou ${totalFeitas} de ${totalDisponivel} questões!`;
+
+            } catch (err) {
+                console.error("Erro ao sincronizar:", err);
+            } finally {
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('menuScreen').style.display = 'block';
+                
+                // Auto-start do cronograma
+                checkAutoStart();
+            }
+        };
+
+        // --- 5. LÓGICA DE SELEÇÃO E FILTRO ---
         function openSubMenu(category) {
             currentCategory = category;
+            const catQuestions = database.filter(q => q.cat === category);
             
-            // Filtra o banco para achar apenas os Tópicos (sub) dessa Categoria
-            const questionsOfCat = database.filter(q => q.cat === category);
-            // Cria uma lista única de subtemas (Ex: [Geometria, Álgebra, Estatística])
-            const subTopics = [...new Set(questionsOfCat.map(q => q.sub))];
+            // Filtra subtópicos que ainda têm questões disponíveis
+            // Se o aluno zerou Geometria, não mostra ou avisa
+            const subTopics = [...new Set(catQuestions.map(q => q.sub))];
 
             document.getElementById('selectionTitle').innerText = category;
             const container = document.getElementById('topicsContainer');
             container.innerHTML = '';
 
-            // Se não tiver subtopicos cadastrados ainda
-            if (subTopics.length === 0) {
-                alert("Ainda estamos cadastrando questões dessa área!");
-                return;
-            }
+            if (subTopics.length === 0) return alert("Em breve!");
 
-            // Gera os Checkboxes
             subTopics.forEach(topic => {
+                // Conta quantas faltam desse tópico
+                const totalTopic = catQuestions.filter(q => q.sub === topic).length;
+                const feitasTopic = catQuestions.filter(q => q.sub === topic && doneQuestions.has(q.id)).length;
+                const disponiveis = totalTopic - feitasTopic;
+
                 const wrapper = document.createElement('div');
+                // Se não tem disponível, desabilita
+                const disabled = disponiveis === 0 ? 'disabled' : '';
+                const labelText = disponiveis === 0 ? `${topic} (Zerado ✅)` : `${topic} (${disponiveis})`;
+
                 wrapper.innerHTML = `
-                    <input type="checkbox" id="check_${topic}" value="${topic}" class="topic-checkbox" checked>
-                    <label for="check_${topic}" class="topic-label">${topic}</label>
+                    <input type="checkbox" id="check_${topic}" value="${topic}" class="topic-checkbox" ${disabled ? '' : 'checked'} ${disabled}>
+                    <label for="check_${topic}" class="topic-label" style="${disabled ? 'opacity:0.5' : ''}">
+                        ${labelText}
+                    </label>
                 `;
                 container.appendChild(wrapper);
             });
 
-            // Troca tela
             document.getElementById('menuScreen').style.display = 'none';
             document.getElementById('selectionScreen').style.display = 'block';
         }
 
-        // --- PASSO 2: INICIAR O QUIZ COM OS FILTROS ---
         function confirmStart() {
-            // Pega todos os checkboxes marcados
             const checkedBoxes = document.querySelectorAll('.topic-checkbox:checked');
             const selectedTopics = Array.from(checkedBoxes).map(cb => cb.value);
 
-            if (selectedTopics.length === 0) {
-                alert("Selecione pelo menos um tópico!");
-                return;
-            }
+            if (selectedTopics.length === 0) return alert("Selecione um tópico ou você já zerou tudo!");
 
-            // Filtra o banco: Tem que ser da Categoria Certa E estar na lista de Tópicos Selecionados
-            quizPool = database.filter(q => q.cat === currentCategory && selectedTopics.includes(q.sub));
+            // O FILTRO DE OURO: Categoria certa + Tópico certo + NÃO FEITA AINDA
+            quizPool = database.filter(q => 
+                q.cat === currentCategory && 
+                selectedTopics.includes(q.sub) && 
+                !doneQuestions.has(q.id) // <--- A MÁGICA ACONTECE AQUI
+            );
 
-            // Embaralha e pega 5
+            // Se sobrar poucas (ex: 2), pega só as 2. Se tiver muitas, pega 5.
             quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 5);
 
-            if (quizPool.length === 0) return alert("Erro interno: Nenhuma questão encontrada.");
+            if (quizPool.length === 0) return alert("Você já completou todas as questões desses tópicos! Parabéns!");
 
             startQuizEngine(selectedTopics.join(', '));
         }
 
         function startQuizGlobal() {
-            quizPool = database.sort(() => 0.5 - Math.random()).slice(0, 10);
-            startQuizEngine("Geral");
+            // Pega qualquer questão não feita
+            quizPool = database.filter(q => !doneQuestions.has(q.id));
+            quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 10);
+            
+            if (quizPool.length === 0) return alert("Você zerou o banco de dados inteiro! Uau!");
+            
+            startQuizEngine("Modo Aleatório");
         }
 
         function startQuizEngine(label) {
@@ -185,13 +247,14 @@
 
             currentIndex = 0;
             score = 0;
-            document.getElementById('subjectTag').innerText = label.length > 20 ? label.substring(0, 20) + "..." : label;
+            sessionAnsweredIDs = []; // Reseta a lista de feitos nessa rodada
+            document.getElementById('subjectTag').innerText = label.length > 20 ? label.substring(0, 15) + "..." : label;
             document.getElementById('qTotal').innerText = quizPool.length;
             
             loadQuestion();
         }
 
-        // --- SISTEMA DO QUIZ (IGUAL ANTES) ---
+        // --- 6. QUIZ ENGINE ---
         function loadQuestion() {
             const q = quizPool[currentIndex];
             document.getElementById('qIndex').innerText = currentIndex + 1;
@@ -204,14 +267,18 @@
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = opt;
-                btn.onclick = () => checkAnswer(index, q.cor, btn);
+                btn.onclick = () => checkAnswer(index, q.cor, btn, q.id); // Passa o ID
                 container.appendChild(btn);
             });
         }
 
-        function checkAnswer(selected, correct, btn) {
+        function checkAnswer(selected, correct, btn, questionID) {
             const allBtns = document.querySelectorAll('.option-btn');
             allBtns.forEach(b => b.disabled = true);
+
+            // Marca como respondida (independente se acertou ou errou, ele "viu" a questão)
+            // Se você quiser que só marque se acertar, coloque isso dentro do if abaixo
+            sessionAnsweredIDs.push(questionID);
 
             if (selected === correct) {
                 btn.classList.add('correct');
@@ -224,19 +291,36 @@
             setTimeout(() => {
                 currentIndex++;
                 if (currentIndex < quizPool.length) loadQuestion();
-                else showResults();
+                else finishQuiz();
             }, 1500);
         }
 
-        function showResults() {
+        // --- 7. FINALIZAÇÃO E SALVAMENTO ---
+        async function finishQuiz() {
             document.getElementById('quizScreen').style.display = 'none';
             document.getElementById('resultScreen').style.display = 'block';
             document.getElementById('finalScore').innerText = `${score}/${quizPool.length}`;
-            
-            const msg = document.getElementById('feedbackText');
-            if (score === quizPool.length) msg.innerText = "Gabaritou! Você é o mestre!";
-            else if (score > quizPool.length / 2) msg.innerText = "Mandou bem!";
-            else msg.innerText = "Bora revisar mais um pouco?";
+            document.getElementById('feedbackText').innerText = "Salvando seu progresso na nuvem...";
+
+            // Salva no Supabase
+            if (sessionAnsweredIDs.length > 0) {
+                const rows = sessionAnsweredIDs.map(qid => ({
+                    user_id: userId,
+                    question_id: qid
+                }));
+
+                try {
+                    const { error } = await supabase.from('questoes_feitas').insert(rows);
+                    if (error) throw error;
+                    
+                    // Atualiza localmente para não precisar recarregar página
+                    sessionAnsweredIDs.forEach(id => doneQuestions.add(id));
+                    document.getElementById('feedbackText').innerText = "Progresso salvo! Essas questões não aparecerão novamente.";
+                } catch (e) {
+                    console.error(e);
+                    document.getElementById('feedbackText').innerText = "Erro ao salvar progresso (Offline?).";
+                }
+            }
         }
 
         function backToMenu() {
@@ -244,16 +328,16 @@
             document.getElementById('menuScreen').style.display = 'block';
         }
 
-        // Integração com Cronograma (Se vier linkado de lá)
-        const autoStart = localStorage.getItem('simulado_auto_start');
-        if (autoStart) {
-            localStorage.removeItem('simulado_auto_start');
-            // Mapeia os códigos do cronograma para nomes bonitos
-            const map = { 'mat': 'Matemática', 'red': 'Linguagens', 'nat': 'Natureza', 'hum': 'Humanas' };
-            const cat = map[autoStart] || 'Geral';
-            if (cat === 'Geral') startQuizGlobal();
-            else openSubMenu(cat); // Abre o menu de seleção ao invés de ir direto
+        function checkAutoStart() {
+            const auto = localStorage.getItem('simulado_auto_start');
+            if (auto) {
+                localStorage.removeItem('simulado_auto_start');
+                const map = { 'mat': 'Matemática', 'red': 'Linguagens', 'nat': 'Natureza', 'hum': 'Humanas' };
+                const cat = map[auto];
+                if(cat) openSubMenu(cat);
+            }
         }
+
     </script>
 </body>
 </html>
