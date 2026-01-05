@@ -884,3 +884,86 @@ input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; 
     border-radius: 8px;
     border: 1px dashed var(--primary);
 }
+
+
+
+/* ==========================================================================
+   18. GAMIFICAÇÃO & NOVOS RECURSOS (UPDATE FEEDBACK)
+   ========================================================================== */
+
+/* Barra de Gamificação (Topo) */
+.gamification-bar {
+    background: #1F2937;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.level-info { display: flex; align-items: center; gap: 15px; flex: 1; }
+.level-badge {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    width: 45px; height: 45px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.2rem;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.xp-container { flex: 1; max-width: 300px; }
+.xp-text { font-size: 0.8rem; display: flex; justify-content: space-between; margin-bottom: 5px; opacity: 0.9; }
+.xp-bg { background: rgba(255,255,255,0.1); height: 8px; border-radius: 10px; overflow: hidden; }
+.xp-fill { background: #10B981; height: 100%; width: 0%; transition: width 0.5s ease; border-radius: 10px; }
+
+.streak-info {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.05);
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Heatmap (Histórico estilo GitHub) */
+.heatmap-box {
+    margin-top: 10px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+.heatmap-day {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    background: #e5e7eb; /* Dia vazio */
+    flex-shrink: 0;
+}
+.heatmap-day.active-1 { background: #86efac; } /* Pouco */
+.heatmap-day.active-2 { background: #22c55e; } /* Médio */
+.heatmap-day.active-3 { background: #15803d; } /* Muito */
+
+/* Animação XP Flutuante */
+.floating-xp {
+    position: absolute;
+    color: #F59E0B;
+    font-weight: 800;
+    font-size: 1.2rem;
+    pointer-events: none;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 1000;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+@keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-30px) scale(1.5); }
+}
+
+/* Ajuste Navbar */
+.nav-left { display: flex; align-items: center; gap: 15px; }
