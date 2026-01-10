@@ -1,4 +1,4 @@
-export const = [
+export const questoes = [
             // --- SUB: ESTATÍSTICA ---
             { id: "MAT-EST-001", cat: "Matemática", sub: "Estatística", txt: "A média de 4, 6 e 8 é:", opt: ["5", "6", "7", "8"], cor: 1 },
             { id: "MAT-EST-002", cat: "Matemática", sub: "Estatística", txt: "A probabilidade de tirar 'Cara' numa moeda justa:", opt: ["25%", "50%", "75%", "100%"], cor: 1 },
