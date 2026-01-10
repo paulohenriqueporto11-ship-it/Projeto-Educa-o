@@ -1,5 +1,6 @@
 export const questoes = [
-
+            
+            // --- SUB: FÍSICA ---
             { id: "NAT-FIS-001", cat: "Natureza", sub: "Física", txt: "A unidade de Força no SI é:", opt: ["Joule", "Watt", "Newton", "Pascal"], cor: 2 },
             { id: "NAT-FIS-002", cat: "Natureza", sub: "Física", txt: "Velocidade é a razão entre:", opt: ["Distância e Tempo", "Massa e Aceleração", "Força e Área", "Energia e Tempo"], cor: 0 },
             { id: "NAT-FIS-003", cat: "Natureza", sub: "Física", txt: "Qual lei diz 'Ação e Reação'?", opt: ["1ª Lei de Newton", "2ª Lei de Newton", "3ª Lei de Newton", "Lei de Ohm"], cor: 2 },
