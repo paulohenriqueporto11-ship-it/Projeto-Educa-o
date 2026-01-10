@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="auth.js"></script>
 </head>
 <body>
     <audio id="audio-rain" loop preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2479/2479-preview.mp3"></audio>
@@ -63,6 +65,7 @@
         <div class="nav-right">
              <div class="study-timer" id="navTimer">00:00</div>
              <button class="btn-outline" onclick="openConfig()" title="Configurar">⚙️</button>
+             <a id="authBtn" href="login.html" class="btn-outline" style="border:none; font-weight:600; margin-left:10px;">Entrar</a>
         </div>
     </nav>
 
@@ -123,22 +126,10 @@
     </div>
 
     <script>
-        // ===========================================
-        // 1. CONFIGURAÇÃO DE REDE E USUÁRIO
-        // ===========================================
-        // IMPORTANTE: Mude para a URL do seu servidor em produção (Render)
         const API_BASE = 'https://backend-redacao.onrender.com/api/cronograma'; 
 
-        // Gera um ID para o dispositivo para identificar no BD (simula login)
-        function getUserId() {
-            let id = localStorage.getItem('estuda_ia_userid');
-            if (!id) {
-                id = 'user_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('estuda_ia_userid', id);
-            }
-            return id;
-        }
-        const USER_ID = getUserId();
+        // Usa Auth
+        const USER_ID = window.UserSession.id;
 
         let state = {
             track: 'med',
@@ -149,12 +140,9 @@
             totalXP: 0,
             streak: 0,
             completedToday: [],
-            heatmapData: [] // Histórico vindo do BD
+            heatmapData: []
         };
 
-        // ===========================================
-        // 2. BANCO DE QUESTÕES (Estático no Frontend)
-        // ===========================================
         const DB = {
             mat: { t: "Matemática", d: "Lista: Geometria Espacial", xp: 200, i: "📐", url: "simulados.html?materia=matematica" },
             red: { t: "Redação", d: "Escrever: Tema 'IA na Educação'", xp: 350, i: "📝", url: "redacao.html" },
@@ -165,12 +153,8 @@
             hum: ['hum', 'hum', 'red', 'mat']
         };
 
-        // ===========================================
-        // 3. INICIALIZAÇÃO (FETCH DO BACKEND)
-        // ===========================================
         window.onload = async function() {
             try {
-                // Chama a API que criamos no server
                 const res = await fetch(`${API_BASE}/dados`, {
                     headers: { 'x-user-id': USER_ID }
                 });
@@ -178,7 +162,6 @@
                 if (!res.ok) throw new Error('Erro na API');
                 const data = await res.json();
 
-                // Atualiza o estado com o que veio do Banco de Dados
                 state.track = data.config.track;
                 state.goalMinutes = data.config.goal_minutes;
                 state.customSubjects = data.config.custom_subjects;
@@ -186,17 +169,15 @@
                 state.totalXP = data.stats.total_xp;
                 state.streak = data.stats.streak;
                 
-                state.completedToday = data.completedToday; // IDs já feitos hoje
+                state.completedToday = data.completedToday; 
                 state.heatmapData = data.history;
 
-                // Renderiza
                 renderMissions();
                 renderGamification();
                 renderHeatmap();
                 updateDisplay();
                 updateHoursLabel(state.goalMinutes / 60);
 
-                // Se for a primeira vez (XP zerado e sem config definida), abre modal
                 if (data.stats.total_xp === 0 && !data.config.track) {
                     openConfig();
                 }
@@ -207,12 +188,7 @@
             }
         };
 
-        // ===========================================
-        // 4. AÇÕES COM O BACKEND
-        // ===========================================
-        
         async function saveConfig() {
-            // Pega dados da UI
             const sel = document.querySelector('.track-option.selected');
             const type = sel ? (sel.dataset.tempType || 'med') : 'med';
             const val = document.getElementById('hoursInput').value;
@@ -223,7 +199,6 @@
                 customSubs = Array.from(chips).map(c => c.getAttribute('onclick').split("'")[1]);
             }
 
-            // Atualiza UI localmente (Feedback imediato)
             state.track = type;
             state.goalMinutes = val * 60;
             state.customSubjects = customSubs;
@@ -232,7 +207,6 @@
             renderMissions();
             resetTimer();
 
-            // Salva no Banco de Dados
             try {
                 await fetch(`${API_BASE}/config`, {
                     method: 'POST',
@@ -248,16 +222,13 @@
 
         async function completeMission(e, idx, xp) {
             if (!state.completedToday.includes(idx)) {
-                // UI Otimista
                 state.completedToday.push(idx);
                 state.totalXP += xp;
                 
-                // Animações
                 confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
                 spawnFloatingXP(xp, e.clientX, e.clientY);
                 renderGamification(); 
 
-                // Envia para o Banco
                 const today = new Date().toISOString().split('T')[0];
                 fetch(`${API_BASE}/concluir`, {
                     method: 'POST',
@@ -265,7 +236,6 @@
                     body: JSON.stringify({ missionId: idx, xpEarned: xp, date: today })
                 }).catch(e => console.error("Erro ao salvar missão", e));
 
-                // Navegação com delay
                 e.preventDefault();
                 const url = e.currentTarget.getAttribute('href');
                 setTimeout(() => {
@@ -275,9 +245,6 @@
             }
         }
 
-        // ===========================================
-        // 5. RENDERIZAÇÃO E UI
-        // ===========================================
         function renderGamification() {
             const level = Math.floor(state.totalXP / 1000) + 1;
             const xpCurrent = state.totalXP % 1000;
@@ -294,14 +261,10 @@
             const grid = document.getElementById('heatmapGrid');
             grid.innerHTML = '';
             
-            // Transforma array do DB em mapa de datas
             const map = {};
             if(state.heatmapData) {
                 state.heatmapData.forEach(item => {
-                    // O backend pode retornar data completa, pegamos só a string YYYY-MM-DD
                     const dateKey = new Date(item.created_at || item.date).toISOString().split('T')[0]; 
-                    // No controller simplificado que mandamos, ele pode mandar já agrupado ou raw
-                    // Vamos assumir raw history e contar aqui, ou usar count se vier
                     if(item.count) {
                         map[dateKey] = item.count;
                     } else {
@@ -369,9 +332,6 @@
             setTimeout(() => el.remove(), 1000);
         }
 
-        // ===========================================
-        // 6. TIMER & AUDIO
-        // ===========================================
         let timerInterval = null;
         let currentAudio = null;
 
@@ -436,9 +396,6 @@
             }
         }
 
-        // ===========================================
-        // 7. MODAL UI
-        // ===========================================
         function openConfig() { 
             document.getElementById('configModal').style.display = 'flex'; 
             updateHoursLabel(state.goalMinutes / 60); 
