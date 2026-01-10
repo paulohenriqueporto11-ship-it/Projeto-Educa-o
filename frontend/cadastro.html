@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta - Estuda.IA</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-box">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div class="logo" style="justify-content: center; font-size: 2rem; margin-bottom: 10px;">
+                    ✨ Estuda.IA
+                </div>
+                <p style="color: var(--text-muted);">Crie sua conta e comece a evoluir.</p>
+            </div>
+
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                
+                <div class="input-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="name" placeholder="Ex: João Silva" required class="main-input" style="height: 50px;">
+                </div>
+
+                <div class="input-group">
+                    <label>E-mail</label>
+                    <input type="email" id="email" placeholder="seu@email.com" required class="main-input" style="height: 50px;">
+                </div>
+
+                <div class="input-group">
+                    <label>Senha</label>
+                    <input type="password" id="password" placeholder="Mínimo 6 caracteres" required minlength="6" class="main-input" style="height: 50px;">
+                </div>
+
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px; background-color: var(--success);">Criar Conta Grátis</button>
+            </form>
+
+            <div style="text-align: center; margin-top: 20px; font-size: 0.9rem;">
+                <p>Já tem uma conta? <a href="login.html" style="color: var(--primary); font-weight: 700;">Fazer Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_AUTH = "https://backend-redacao.onrender.com/api/auth";
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.querySelector('button[type="submit"]');
+            const originalText = btn.innerText;
+
+            // UI Feedback
+            btn.innerText = "Criando conta...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_AUTH}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.erro || 'Erro ao criar conta.');
+                }
+
+                // Sucesso!
+                alert("Conta criada com sucesso! Agora faça login.");
+                window.location.href = "login.html";
+
+            } catch (error) {
+                alert(error.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
