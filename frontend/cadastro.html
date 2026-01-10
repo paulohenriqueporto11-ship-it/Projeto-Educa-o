@@ -11,36 +11,52 @@
 
     <div class="login-wrapper">
         <div class="login-box">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <div class="logo" style="justify-content: center; font-size: 2rem; margin-bottom: 10px;">
-                    ✨ Estuda.IA
+            
+            <div id="formScreen">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div class="logo" style="justify-content: center; font-size: 2rem; margin-bottom: 10px;">
+                        ✨ Estuda.IA
+                    </div>
+                    <p style="color: var(--text-muted);">Crie sua conta e comece a evoluir.</p>
                 </div>
-                <p style="color: var(--text-muted);">Crie sua conta e comece a evoluir.</p>
+
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <div class="input-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="name" placeholder="Ex: João Silva" required class="main-input" style="height: 50px;">
+                    </div>
+
+                    <div class="input-group">
+                        <label>E-mail</label>
+                        <input type="email" id="email" placeholder="seu@email.com" required class="main-input" style="height: 50px;">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Senha</label>
+                        <input type="password" id="password" placeholder="Mínimo 6 caracteres" required minlength="6" class="main-input" style="height: 50px;">
+                    </div>
+
+                    <button type="submit" class="btn" style="width: 100%; margin-top: 10px; background-color: var(--success);">Criar Conta Grátis</button>
+                </form>
+
+                <div style="text-align: center; margin-top: 20px; font-size: 0.9rem;">
+                    <p>Já tem uma conta? <a href="login.html" style="color: var(--primary); font-weight: 700;">Fazer Login</a></p>
+                </div>
             </div>
 
-            <form id="registerForm" onsubmit="handleRegister(event)">
-                
-                <div class="input-group">
-                    <label>Nome Completo</label>
-                    <input type="text" id="name" placeholder="Ex: João Silva" required class="main-input" style="height: 50px;">
+            <div id="successScreen" style="display: none; text-align: center;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">📩</div>
+                <h2 style="color: var(--text-main); margin-bottom: 10px;">Verifique seu E-mail</h2>
+                <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+                    Enviamos um link de confirmação para:<br>
+                    <strong id="emailSent" style="color: var(--primary);">...</strong>
+                </p>
+                <div style="background: #FEF3C7; color: #92400E; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px;">
+                    ⚠️ Importante: Você só conseguirá fazer login após clicar no link enviado.
                 </div>
-
-                <div class="input-group">
-                    <label>E-mail</label>
-                    <input type="email" id="email" placeholder="seu@email.com" required class="main-input" style="height: 50px;">
-                </div>
-
-                <div class="input-group">
-                    <label>Senha</label>
-                    <input type="password" id="password" placeholder="Mínimo 6 caracteres" required minlength="6" class="main-input" style="height: 50px;">
-                </div>
-
-                <button type="submit" class="btn" style="width: 100%; margin-top: 10px; background-color: var(--success);">Criar Conta Grátis</button>
-            </form>
-
-            <div style="text-align: center; margin-top: 20px; font-size: 0.9rem;">
-                <p>Já tem uma conta? <a href="login.html" style="color: var(--primary); font-weight: 700;">Fazer Login</a></p>
+                <a href="login.html" class="btn" style="width: 100%;">Voltar para Login</a>
             </div>
+
         </div>
     </div>
 
@@ -56,7 +72,6 @@
             const btn = document.querySelector('button[type="submit"]');
             const originalText = btn.innerText;
 
-            // UI Feedback
             btn.innerText = "Criando conta...";
             btn.disabled = true;
 
@@ -73,9 +88,10 @@
                     throw new Error(data.erro || 'Erro ao criar conta.');
                 }
 
-                // Sucesso!
-                alert("Conta criada com sucesso! Agora faça login.");
-                window.location.href = "login.html";
+                // SUCESSO: Troca a tela do formulário pela tela de aviso
+                document.getElementById('emailSent').innerText = email;
+                document.getElementById('formScreen').style.display = 'none';
+                document.getElementById('successScreen').style.display = 'block';
 
             } catch (error) {
                 alert(error.message);
