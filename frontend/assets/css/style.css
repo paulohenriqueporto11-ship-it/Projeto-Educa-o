@@ -1,6 +1,6 @@
 /* ==========================================================================
    ESTUDA.IA - FOLHA DE ESTILOS MESTRA (MASTER STYLESHEET)
-   Versão: 13.0 (Final Fix - Scoped Layout & Links)
+   Versão: 13.1 (Fix Loading Screen Overlay)
    ========================================================================== */
 
 /* ==========================================================================
@@ -311,10 +311,11 @@ textarea.main-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px 
    8. COMPONENTES ESPECIAIS (Loading & Modais)
    ========================================================================== */
 
-.loading-overlay {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255,255,255,0.95); z-index: 200; backdrop-filter: blur(5px);
-    align-items: center; justify-content: center; flex-direction: column;
+/* FIX DA TELA DE CARREGAMENTO: Agora cobre tudo com z-index alto */
+.loading-screen, .loading-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.95); z-index: 10000; backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
 }
 
 .loader {
