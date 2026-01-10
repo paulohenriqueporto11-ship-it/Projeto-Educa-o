@@ -10,12 +10,16 @@
     
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="auth.js"></script>
 </head>
 <body>
 
     <nav>
         <div class="logo">✨ Estuda.IA</div>
-        <div style="font-weight:600">Aluno</div>
+        <div class="nav-right">
+            <a id="authBtn" href="login.html" class="btn-outline" style="border:none; font-weight:600;">Entrar</a>
+        </div>
     </nav>
 
     <div class="container">
@@ -86,11 +90,8 @@
     <script>
         const API_BASE = "https://backend-redacao.onrender.com/api/redacao";
 
-        let userId = localStorage.getItem('estudaia_id');
-        if (!userId) {
-            userId = 'u_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('estudaia_id', userId);
-        }
+        // Usa o objeto global criado pelo auth.js
+        const userId = window.UserSession.id;
 
         async function carregarStats() {
             try {
