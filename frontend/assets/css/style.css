@@ -1002,3 +1002,33 @@ input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; 
             content: '✅';
             font-size: 0.9rem;
         }
+
+/* Botões de Quantidade */
+.qty-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.qty-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.qty-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.qty-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
