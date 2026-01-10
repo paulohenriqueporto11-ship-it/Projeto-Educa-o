@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="auth.js"></script>
 </head>
 <body>
 
@@ -17,6 +19,7 @@
         </div>
         <div class="nav-right">
              <div class="study-timer" id="wordCount">0 palavras</div>
+             <a id="authBtn" href="login.html" class="btn-outline" style="border:none; font-weight:600; margin-left:10px;">Entrar</a>
         </div>
     </nav>
 
@@ -60,27 +63,20 @@
     </div>
 
     <script>
-        // URL DO SEU BACKEND NO RENDER
         const API_BASE = "https://backend-redacao.onrender.com/api/redacao";
 
-        // 1. RECUPERAR DADOS DO LOCALSTORAGE
-        let userId = localStorage.getItem('estuda_ia_userid');
-        if (!userId) {
-            userId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('estuda_ia_userid', userId);
-        }
+        // Usa Auth
+        const userId = window.UserSession.id;
 
         const temaAtual = localStorage.getItem('temaRedacao') || "Tema Livre";
         document.getElementById('temaDisplay').innerText = temaAtual;
 
-        // 2. CONTADOR DE PALAVRAS
         function contarPalavras() {
             const texto = document.getElementById('textoRedacao').value;
             const palavras = texto.trim() === '' ? 0 : texto.trim().split(/\s+/).length;
             document.getElementById('wordCount').innerText = `${palavras} palavras`;
         }
 
-        // 3. ENVIAR PARA CORREÇÃO
         async function enviarParaCorrecao() {
             const texto = document.getElementById('textoRedacao').value;
             const btn = document.getElementById('btnEnviar');
@@ -91,7 +87,6 @@
                 return;
             }
 
-            // UI: Loading state
             btn.disabled = true;
             loading.style.display = 'flex';
 
@@ -112,25 +107,18 @@
                     throw new Error(data.erro || 'Erro ao conectar com o servidor');
                 }
 
-                // SUCESSO: Mostrar Resultado
                 loading.style.display = 'none';
-                document.querySelector('.editor-box').style.display = 'none'; // Esconde editor
-                document.getElementById('resultadoContainer').style.display = 'block'; // Mostra nota
+                document.querySelector('.editor-box').style.display = 'none';
+                document.getElementById('resultadoContainer').style.display = 'block';
 
-                // Preencher dados principais
                 document.getElementById('notaFinal').innerText = data.resultado.notaFinal;
                 
-                // --- AQUI ESTÁ A CORREÇÃO DA VISUALIZAÇÃO ---
-                // Agora lemos os objetos completos da sua engine
                 let feedbackHTML = `<p style="font-size:1.1rem; margin-bottom:20px; color:#4B5563;">${data.resultado.analiseGeral && data.resultado.analiseGeral.length > 0 ? data.resultado.analiseGeral[0] : "Parabéns pela redação!"}</p>`;
 
                 if (data.resultado.competencias) {
                     feedbackHTML += "<div style='display:flex; flex-direction:column; gap:10px;'>";
                     
-                    // Loop corrigido para ler objeto { nome, nota, erros }
                     for (const [key, dados] of Object.entries(data.resultado.competencias)) {
-                        
-                        // Verifica se tem erros para mostrar em vermelho
                         let errosHTML = '';
                         if(dados.erros && dados.erros.length > 0) {
                             errosHTML = `<div style="margin-top:4px; font-size:0.85rem; color:#DC2626;">
@@ -152,7 +140,6 @@
 
                 document.getElementById('feedbackTexto').innerHTML = feedbackHTML;
 
-                // Confete se nota boa
                 if (data.resultado.notaFinal >= 700) {
                     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                 }
