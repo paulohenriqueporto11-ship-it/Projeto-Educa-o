@@ -6,6 +6,34 @@
     <title>Simulados Pro - Estuda.IA</title>
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        .qty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .qty-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .qty-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .qty-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+    </style>
 </head>
 <body>
 
@@ -36,7 +64,13 @@
             </div>
             
             <div style="margin-top:20px; text-align:center;">
-                <button class="btn-outline" onclick="startQuizGlobal()" style="width:100%; max-width:300px;">🎲 Modo Aleatório (Tudo)</button>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Quantidade de Questões:</p>
+                <div class="qty-selector">
+                    <button class="qty-btn active" onclick="setQty(10, this)">10</button>
+                    <button class="qty-btn" onclick="setQty(20, this)">20</button>
+                    <button class="qty-btn" onclick="setQty(40, this)">40</button>
+                </div>
+                <button class="btn-outline" onclick="startQuizGlobal()" style="width:100%; max-width:300px;">🎲 Iniciar Modo Aleatório</button>
             </div>
         </div>
 
@@ -45,7 +79,18 @@
                 <h2 id="selectionTitle" style="margin-bottom:5px;">Matemática</h2>
                 <p style="color:var(--text-muted); font-size:0.9rem;">Selecione os tópicos:</p>
             </div>
+            
             <div class="topics-grid" id="topicsContainer"></div>
+
+            <div style="margin: 20px 0; text-align: center; border-top: 1px solid var(--border); padding-top: 15px;">
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Tamanho do Simulado:</p>
+                <div class="qty-selector">
+                    <button class="qty-btn topic-qty active" onclick="setTopicQty(10, this)">10</button>
+                    <button class="qty-btn topic-qty" onclick="setTopicQty(20, this)">20</button>
+                    <button class="qty-btn topic-qty" onclick="setTopicQty(40, this)">40</button>
+                </div>
+            </div>
+
             <div style="display:flex; gap:10px;">
                 <button class="btn-outline" onclick="backToMenu()" style="flex:1;">Voltar</button>
                 <button class="btn" onclick="confirmStart()" style="flex:1;">Iniciar</button>
@@ -72,10 +117,8 @@
     </div>
 
     <script type="module">
-        // 1. Importa o banco de dados completo
         import { database } from './gerenciador_questoes.js';
 
-        // 2. Configurações da API
         const API_BASE = "https://backend-redacao.onrender.com/api/simulados";
 
         let userId = localStorage.getItem('estuda_ia_userid');
@@ -84,15 +127,16 @@
             localStorage.setItem('estuda_ia_userid', userId);
         }
 
-        // 3. Estado da Aplicação
+        // Variáveis de Estado
         let doneQuestions = new Set();
         let quizPool = [];
         let currentIndex = 0;
         let score = 0;
         let currentCategory = "";
         let sessionAnsweredIDs = [];
+        let selectedQty = 10; // Padrão: 10 questões
 
-        // 4. Inicialização
+        // --- INICIALIZAÇÃO ---
         window.onload = async function() {
             try {
                 const response = await fetch(`${API_BASE}/progresso/${userId}`);
@@ -111,17 +155,33 @@
 
         function updateStats() {
             const totalFeitas = doneQuestions.size;
-            const totalDisponivel = database.length; // Usa o database importado
+            const totalDisponivel = database.length;
             document.getElementById('progressoTotal').innerText = `Você já dominou ${totalFeitas} de ${totalDisponivel} questões!`;
         }
 
-        // 5. Funções de UI (Expostas para o window porque é um module)
+        // --- FUNÇÕES DE CONTROLE DE QUANTIDADE ---
+        window.setQty = function(n, btn) {
+            selectedQty = n;
+            document.querySelectorAll('.qty-selector .qty-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        };
+
+        window.setTopicQty = function(n, btn) {
+            selectedQty = n;
+            document.querySelectorAll('.topic-qty').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        };
+
+        // --- FUNÇÕES DE NAVEGAÇÃO ---
         window.openSubMenu = function(category) {
             currentCategory = category;
-            // Filtra do database importado
-            const catQuestions = database.filter(q => q.cat === category);
+            selectedQty = 10; // Reseta para 10 ao abrir o menu
             
-            // Extrai subtópicos únicos
+            // Reseta visual dos botões
+            document.querySelectorAll('.topic-qty').forEach(b => b.classList.remove('active'));
+            document.querySelector('.topic-qty').classList.add('active'); 
+
+            const catQuestions = database.filter(q => q.cat === category);
             const subTopics = [...new Set(catQuestions.map(q => q.sub))];
 
             document.getElementById('selectionTitle').innerText = category;
@@ -158,24 +218,29 @@
 
             if (selectedTopics.length === 0) return alert("Selecione um tópico ou você já zerou tudo!");
 
-            // Filtra e embaralha
             quizPool = database.filter(q => 
                 q.cat === currentCategory && 
                 selectedTopics.includes(q.sub) && 
                 !doneQuestions.has(q.id)
             );
 
-            // Sorteia e pega 10 questões (ou menos se tiver pouco)
-            quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 10);
+            // Sorteia e corta na quantidade selecionada
+            quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, selectedQty);
 
             if (quizPool.length === 0) return alert("Você já completou todas as questões desses tópicos! Parabéns!");
+            
+            if (quizPool.length < selectedQty) {
+                alert(`Nota: Só restam ${quizPool.length} questões novas nestes tópicos. O simulado será adaptado.`);
+            }
 
             startQuizEngine(selectedTopics.join(', '));
         };
 
         window.startQuizGlobal = function() {
             quizPool = database.filter(q => !doneQuestions.has(q.id));
-            quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, 10);
+            
+            // Sorteia e corta na quantidade selecionada
+            quizPool = quizPool.sort(() => 0.5 - Math.random()).slice(0, selectedQty);
             
             if (quizPool.length === 0) return alert("Você zerou o banco de dados inteiro! Incrível!");
             startQuizEngine("Modo Aleatório");
@@ -200,7 +265,7 @@
             document.getElementById('menuScreen').style.display = 'block';
         };
 
-        // 6. Lógica do Quiz
+        // --- LÓGICA DO QUIZ ---
         function loadQuestion() {
             const q = quizPool[currentIndex];
             document.getElementById('qIndex').innerText = currentIndex + 1;
@@ -258,7 +323,6 @@
 
                     if(!response.ok) throw new Error("Erro ao salvar");
 
-                    // Atualiza localmente
                     sessionAnsweredIDs.forEach(id => doneQuestions.add(id));
                     updateStats();
                     document.getElementById('feedbackText').innerText = "Progresso salvo! Questões não se repetirão.";
