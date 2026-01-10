@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulados Pro - Estuda.IA</title>
-   <link rel="manifest" href="manifest.json">
+    
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4F46E5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,6 +17,19 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="auth.js"></script>
 
+    <style>
+        .qty-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .qty-btn { padding: 8px 16px; border: 1px solid var(--border); background: transparent; border-radius: 20px; cursor: pointer; font-weight: 600; color: var(--text-muted); transition: all 0.2s; }
+        .qty-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .qty-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        /* CSS dos botões de tópico */
+        .topics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; text-align: left; }
+        .topic-checkbox { display: none; }
+        .topic-label { background: white; border: 2px solid var(--border); padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-muted); transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; }
+        .topic-checkbox:checked + .topic-label { border-color: var(--primary); background: #EEF2FF; color: var(--primary); }
+        .topic-checkbox:checked + .topic-label::after { content: '✅'; font-size: 0.9rem; }
+    </style>
 </head>
 <body>
 
@@ -33,7 +47,14 @@
     </nav>
 
     <div class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center;">
+        
         <div id="menuScreen" style="width: 100%; display:none;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="margin-bottom: 10px;">Simulados</h1>
+                <p style="color:var(--text-muted);">Questões inteligentes que não se repetem.</p>
+                <small id="progressoTotal" style="color:var(--primary); font-weight:bold;">Carregando stats...</small>
+            </div>
+
             <div class="subjects-grid">
                 <div class="subject-card" onclick="openSubMenu('Humanas')"><span class="subject-icon">🏛️</span><span class="subject-title">Humanas</span></div>
                 <div class="subject-card" onclick="openSubMenu('Natureza')"><span class="subject-icon">🧬</span><span class="subject-title">Natureza</span></div>
@@ -58,6 +79,7 @@
                 <p style="color:var(--text-muted); font-size:0.9rem;">Selecione os tópicos:</p>
             </div>
             <div class="topics-grid" id="topicsContainer"></div>
+            
             <div style="margin: 20px 0; text-align: center; border-top: 1px solid var(--border); padding-top: 15px;">
                 <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Tamanho do Simulado:</p>
                 <div class="qty-selector">
@@ -66,6 +88,7 @@
                     <button class="qty-btn topic-qty" onclick="setTopicQty(40, this)">40</button>
                 </div>
             </div>
+
             <div style="display:flex; gap:10px;">
                 <button class="btn-outline" onclick="backToMenu()" style="flex:1;">Voltar</button>
                 <button class="btn" onclick="confirmStart()" style="flex:1;">Iniciar</button>
@@ -126,7 +149,10 @@
         function updateStats() {
             const totalFeitas = doneQuestions.size;
             const totalDisponivel = database.length;
-            document.getElementById('progressoTotal').innerText = `Você já dominou ${totalFeitas} de ${totalDisponivel} questões!`;
+            const el = document.getElementById('progressoTotal');
+            if(el) {
+                el.innerText = `Você já dominou ${totalFeitas} de ${totalDisponivel} questões!`;
+            }
         }
 
         window.setQty = function(n, btn) {
