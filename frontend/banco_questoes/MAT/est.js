@@ -100,4 +100,4 @@ export const questoes = [
             { id: "MAT-EST-098", cat: "Matemática", sub: "Estatística", txt: "Decil divide os dados em quantas partes?", opt: ["10", "100", "4", "2"], cor: 0 },
             { id: "MAT-EST-099", cat: "Matemática", sub: "Estatística", txt: "Percentil 50 (P50) é o mesmo que:", opt: ["Mediana", "Média", "Moda", "Q1"], cor: 0 },
             { id: "MAT-EST-100", cat: "Matemática", sub: "Estatística", txt: "Margem de erro em pesquisas indica:", opt: ["A imprecisão esperada", "Que a pesquisa é falsa", "O número de entrevistados", "O custo"], cor: 0 },
-        ;]
+];
