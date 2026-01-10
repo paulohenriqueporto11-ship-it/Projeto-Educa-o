@@ -1,4 +1,4 @@
-export const = [
+export const questoes = [
             // --- SUB: ÁLGEBRA ---
             { id: "MAT-ALG-001", cat: "Matemática", sub: "Álgebra", txt: "Raiz de 2x - 4 = 0:", opt: ["1", "2", "4", "-2"], cor: 1 },
             { id: "MAT-ALG-002", cat: "Matemática", sub: "Álgebra", txt: "Bhaskara resolve equações de:", opt: ["1º Grau", "2º Grau", "3º Grau", "Exponencial"], cor: 1 },
