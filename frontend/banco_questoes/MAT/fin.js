@@ -1,4 +1,4 @@
-export const = [
+export const questoes = [
  
             // --- NOVO TÓPICO: MATEMÁTICA FINANCEIRA (001 em diante) ---
             { id: "MAT-FIN-001", cat: "Matemática", sub: "Financeira", txt: "Juros compostos são conhecidos como:", opt: ["Juros sobre juros", "Juros fixos", "Desconto simples", "Amortização"], cor: 0 },
