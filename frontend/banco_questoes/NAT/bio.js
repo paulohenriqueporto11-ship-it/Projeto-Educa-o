@@ -42,7 +42,6 @@ export const questoes = [
             { id: "NAT-BIO-039", cat: "Natureza", sub: "Biologia", txt: "Os glóbulos vermelhos transportam:", opt: ["Defesa", "Oxigênio", "Coagulação", "Hormônios"], cor: 1 },
             { id: "NAT-BIO-040", cat: "Natureza", sub: "Biologia", txt: "A bile é armazenada na:", opt: ["Vesícula Biliar", "Fígado", "Pâncreas", "Estômago"], cor: 0 },
             { id: "NAT-BIO-041", cat: "Natureza", sub: "Biologia", txt: "Qual a função dos rins?", opt: ["Bombear sangue", "Filtrar o sangue e produzir urina", "Produzir bile", "Digestionar gordura"], cor: 1 },
-            { id: "NAT-BIO-041", cat: "Natureza", sub: "Biologia", txt: "O hormônio que regula o açúcar no sangue é:", opt: ["Adrenalina", "Insulina", "Testosterona", "Melatonina"], cor: 1 },
             { id: "NAT-BIO-042", cat: "Natureza", sub: "Biologia", txt: "O daltonismo é uma herança ligada ao:", opt: ["Cromossomo Y", "Cromossomo X", "Cromossomo 21", "Mitocôndria"], cor: 1 },
             { id: "NAT-BIO-043", cat: "Natureza", sub: "Biologia", txt: "A queima de combustíveis fósseis agrava o:", opt: ["Efeito Estufa", "Buraco na Camada de Ozônio", "Vulcanismo", "Tsunami"], cor: 0 },
             { id: "NAT-BIO-044", cat: "Natureza", sub: "Biologia", txt: "Qual destes é um peixe cartilaginoso?", opt: ["Sardinha", "Tubarão", "Tilápia", "Salmão"], cor: 1 },
@@ -102,5 +101,5 @@ export const questoes = [
             { id: "NAT-BIO-098", cat: "Natureza", sub: "Biologia", txt: "A fecundação do óvulo ocorre geralmente na:", opt: ["Trompa uterina", "Vagina", "Útero", "Ovário"], cor: 0 },
             { id: "NAT-BIO-099", cat: "Natureza", sub: "Biologia", txt: "Qual destes é um Anelídeo?", opt: ["Minhoca", "Cobra", "Lesma", "Centopeia"], cor: 0 },
             { id: "NAT-BIO-100", cat: "Natureza", sub: "Biologia", txt: "A Teoria da Endossimbiose explica a origem de:", opt: ["Mitocôndrias e Cloroplastos", "Ribossomos", "Vírus", "Bactérias"], cor: 0 },
-            
+            { id: "NAT-BIO-101", cat: "Natureza", sub: "Biologia", txt: "O hormônio que regula o açúcar no sangue é:", opt: ["Adrenalina", "Insulina", "Testosterona", "Melatonina"], cor: 1 },
        ];
